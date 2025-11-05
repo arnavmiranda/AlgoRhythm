@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AlgoRhythms — Piano</title>
+
+  <!-- Prevent page scrollbar; final styles live in css/piano.css -->
+  <style> html,body{height:100%;margin:0;overflow:hidden;} </style>
+
+  <!-- Link to split CSS file -->
+  <link rel="stylesheet" href="css/piano.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- TOPBAR / TRANSPORT -->
+    <header class="topbar panel">
+      <div class="brand">
+        <div class="logo">🎵</div>
+        <div>
+          <div class="app-title">AlgoRhythms</div>
+          <div class="subtitle">Piano — 3 octaves</div>
+        </div>
+      </div>
+
+      <div class="transport">
+        <div class="rec-indicator" id="recIndicator" style="visibility:hidden">
+          <div class="rec-dot"></div>
+          <div class="timer" id="recTimer">00:00</div>
+        </div>
+
+        <button class="ctrl-btn" id="recordBtn">⏺ Record</button>
+        <button class="ctrl-btn secondary" id="stopBtn" disabled>⏹ Stop</button>
+
+        <div class="theme-wrapper">
+          <label class="hint">Theme</label>
+          <select id="themeSelect" class="theme-select">
+            <option value="cyan">Piano (Cyan)</option>
+            <option value="purple">Purple</option>
+            <option value="orange">Orange</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN / STAGE (piano centered) -->
+    <main class="main">
+      <section class="stage">
+
+        <!-- Visualizer -->
+        <div class="panel visual-panel">
+          <div class="visual-header">
+            <div class="visual-title">Output Visualizer</div>
+            <div class="hint small">Connects to audio output</div>
+          </div>
+          <div class="visualizer"><canvas id="vizCanvas"></canvas></div>
+        </div>
+
+        <!-- Piano panel -->
+        <div class="panel piano-panel">
+          <div class="panel-header">
+            <div class="panel-title">Virtual Piano</div>
+            <div class="panel-controls">
+              <label><input type="checkbox" id="showLabels" checked> Show notes</label>
+              <span class="hint">Play: Click / QWERTY mapped keys</span>
+            </div>
+          </div>
+
+          <div class="piano-wrap">
+            <div id="piano" class="piano">
+              <div id="whiteKeys" class="white-keys"></div>
+              <div id="blackKeys" class="black-keys"></div>
+            </div>
+          </div>
+
+          <div class="panel-footer">
+            <button class="ctrl-btn secondary" id="undoBtn">↩ Undo</button>
+            <button class="ctrl-btn secondary" id="redoBtn">↪ Redo</button>
+            <div class="hint">Recorded notes: <span id="dequeSize">0</span></div>
+          </div>
+        </div>
+
+      </section>
+    </main>
+
+    <!-- BOTTOM RECORDINGS DOCK (NEW) -->
+    <aside id="recordingsDock" class="recordings-dock">
+      <div class="dock-topline"></div>
+      <div class="dock-inner" role="region" aria-label="Saved recordings">
+        <!-- recordingsList will be rendered here by script.js -->
+        <ul id="recordingsList" class="recordings-list"></ul>
+      </div>
+
+      <div class="dock-toolbar">
+        <button class="ctrl-btn secondary" id="clearAllBtn">Clear All</button>
+        <div class="hint dock-info">Total: <span id="savedCount">0</span></div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/script.js"></script>
+  <script src="js/piano.js"></script>
+</body>
+</html>
