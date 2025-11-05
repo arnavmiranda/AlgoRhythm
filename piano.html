@@ -203,6 +203,15 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   cursor: pointer; font-size: 13px;
 }
 .recording-item .small-btn:hover { background: var(--accent2); color: #111; }
+#toggleLabelsBtn {
+  background: rgba(255,255,255,0.08);
+  font-weight: 500;
+}
+#toggleLabelsBtn.active {
+  background: var(--accent2);
+  color: #111;
+}
+
 </style>
 </head>
 
@@ -219,6 +228,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
       </div>
       <button id="recordBtn">⏺ Record</button>
       <button id="stopBtn" disabled>⏹ Stop</button>
+      <button id="toggleLabelsBtn">🎹 Toggle Labels</button>
     </div>
   </div>
 
@@ -381,6 +391,20 @@ dockHeader.onclick=()=>{
   const main=$("mainSection");
   if(dock.classList.contains("expanded")) main.scrollTo({top:0,behavior:"smooth"});
 };
+/* --- Toggle Note Labels --- */
+const toggleBtn = $("toggleLabelsBtn");
+let labelsVisible = true;
+
+toggleBtn.onclick = () => {
+  labelsVisible = !labelsVisible;
+  toggleBtn.classList.toggle("active", labelsVisible);
+
+  // Show/hide all text labels on keys
+  document.querySelectorAll(".white-key, .black-key").forEach(k => {
+    k.textContent = labelsVisible ? k.dataset.note : "";
+  });
+};
+
 </script>
 </body>
 </html>
