@@ -1,210 +1,530 @@
-/* piano.js */
-(function(){
-  const notesOrder = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-  const octaves = [4,5,6]; // three octaves
-  const whiteSequence = ['C','D','E','F','G','A','B']; // order of white keys in an octave
-  // for each octave we'll render 7 white keys (3 octaves -> 21 white keys)
-  const pianoWrap = document.getElementById('pianoWrap');
-  const whiteKeysEl = document.getElementById('whiteKeys');
-  const blackKeysEl = document.getElementById('blackKeys');
+/* ----------------------
+   Application logic
+   - robust, defensive
+   ---------------------- */
 
-  /* black-key horizontal offsets relative to a white key width (60px). We'll compute left positions in JS */
-  const blackOffsets = {
-    // within an octave: black keys sit between white keys. We'll compute left offsets per white key index
-    'C#': 0.65,
-    'D#': 1.65,
-    'F#': 3.65,
-    'G#': 4.65,
-    'A#': 5.65
-  };
+/* ---------- App State & Utilities ---------- */
+const app = {
+  ctx: null,
+  dest: null,
+  analyser: null,
+  mediaRecorder: null,
+  recordingChunks: [],
+  recordings: [], // {id, name, dataUrl, created, duration, samples (Float32Array for waveform preview)}
+  deque: [],
+  redoStack: [],
+  isRecording: false,
+  recorderTimer: null,
+  recorderStartAt: 0,
+  persist: true
+};
 
-  const whiteKeyWidth = 60;
-  const whiteKeys = []; // store {el, note}
+function $(id){ return document.getElementById(id); }
+function now(){ return Date.now(); }
+function uid(prefix='id'){ return prefix + '-' + Math.random().toString(36).slice(2,9); }
+function formatTime(ms){
+  const s = Math.floor(ms/1000);
+  const mm = String(Math.floor(s/60)).padStart(2,'0');
+  const ss = String(s%60).padStart(2,'0');
+  return `${mm}:${ss}`;
+}
 
-  // create white keys
-  let whiteIndex = 0;
-  octaves.forEach(oct => {
+/* ---------- Audio Context + Destination ---------- */
+function ensureAudioContext(){
+  if (app.ctx) return app.ctx;
+  const C = window.AudioContext || window.webkitAudioContext;
+  app.ctx = new C();
+  app.dest = app.ctx.createMediaStreamDestination(); // capture node
+  app.analyser = app.ctx.createAnalyser();
+  app.analyser.fftSize = 1024;
+  // connect analyser to destination for visualization:
+  app.analyser.connect(app.ctx.destination);
+  // note: when we play sample nodes, we will connect them both to ctx.destination and app.dest (so recorder picks up)
+  return app.ctx;
+}
+
+/* ---------- Visualizer ---------- */
+const vizCanvas = $('vizCanvas');
+const vctx = vizCanvas.getContext('2d');
+function resizeViz(){
+  vizCanvas.width = vizCanvas.clientWidth * devicePixelRatio;
+  vizCanvas.height = vizCanvas.clientHeight * devicePixelRatio;
+}
+window.addEventListener('resize', resizeViz);
+resizeViz();
+
+function drawVisualizer(){
+  requestAnimationFrame(drawVisualizer);
+  if (!app.analyser) return;
+  const bufferLength = app.analyser.frequencyBinCount;
+  const data = new Uint8Array(bufferLength);
+  app.analyser.getByteTimeDomainData(data);
+
+  vctx.clearRect(0,0,vizCanvas.width,vizCanvas.height);
+  vctx.lineWidth = 2 * devicePixelRatio;
+  vctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#2dd4bf';
+  vctx.beginPath();
+  const sliceWidth = vizCanvas.width / bufferLength;
+  let x = 0;
+  for (let i=0;i<bufferLength;i++){
+    const v = (data[i] / 128.0) - 1.0;
+    const y = (vizCanvas.height / 2) + v * (vizCanvas.height / 2) * 0.9;
+    if (i === 0) vctx.moveTo(x,y); else vctx.lineTo(x,y);
+    x += sliceWidth;
+  }
+  vctx.stroke();
+}
+drawVisualizer();
+
+/* ---------- Recording controls (capture app audio) ---------- */
+const recIndicator = $('recIndicator');
+const recTimer = $('recTimer');
+const recordBtn = $('recordBtn'), stopBtn = $('stopBtn'), playbackBtn = $('playbackBtn');
+
+recordBtn.addEventListener('click', startRecording);
+stopBtn.addEventListener('click', stopRecording);
+playbackBtn.addEventListener('click', playDequeAsSequence);
+
+function updateRecorderTimer(){
+  if (!app.isRecording) return;
+  const elapsed = Date.now() - app.recorderStartAt;
+  recTimer.textContent = formatTime(elapsed);
+  app.recorderTimer = setTimeout(updateRecorderTimer, 200);
+}
+
+function startRecording(){
+  try {
+    ensureAudioContext();
+    // create MediaRecorder from destination stream (captures nodes routed into app.dest.stream)
+    const stream = app.dest.stream;
+    const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+    const mr = new MediaRecorder(stream, { mimeType: mime });
+    app.recordingChunks = [];
+    mr.ondataavailable = e => { if (e.data && e.data.size) app.recordingChunks.push(e.data); };
+    mr.onstop = onRecordingStop;
+    mr.start();
+    app.mediaRecorder = mr;
+    app.isRecording = true;
+    recIndicator.style.visibility = 'visible';
+    $('recordBtn').disabled = true;
+    $('stopBtn').disabled = false;
+    app.recorderStartAt = Date.now();
+    updateRecorderTimer();
+  } catch (err) {
+    console.error('startRecording error', err);
+    alert('Could not start recording — check browser permissions and try again.');
+  }
+}
+
+function stopRecording(){
+  if (app.mediaRecorder && app.mediaRecorder.state === 'recording') app.mediaRecorder.stop();
+  app.isRecording = false;
+  recIndicator.style.visibility = 'hidden';
+  $('recordBtn').disabled = false;
+  $('stopBtn').disabled = true;
+  if (app.recorderTimer) clearTimeout(app.recorderTimer);
+}
+
+/* called when mediaRecorder stops */
+async function onRecordingStop(){
+  try {
+    const blob = new Blob(app.recordingChunks, { type: app.recordingChunks[0]?.type || 'audio/webm' });
+    const url = URL.createObjectURL(blob);
+    // decode for waveform preview and duration
+    const arrayBuffer = await blob.arrayBuffer();
+    const decodeCtx = ensureAudioContext();
+    const audioBuffer = await decodeCtx.decodeAudioData(arrayBuffer.slice(0)); // copy safety
+    // derive a small sample array for waveform drawing (mono mix)
+    const raw = audioBuffer.getChannelData(0);
+    // downsample to ~512 samples for preview
+    const preview = downsampleTo(raw, Math.min(512, raw.length));
+    const rec = {
+      id: uid('rec'),
+      name: `Recording ${new Date().toLocaleString()}`,
+      dataUrl: await blobToDataURL(blob),
+      created: Date.now(),
+      duration: Math.round((audioBuffer.duration || 0) * 1000),
+      samples: preview
+    };
+    app.recordings.unshift(rec);
+    renderRecordings();
+    persistRecordingsIfNeeded();
+  } catch (err) {
+    console.error('onRecordingStop error', err);
+  }
+}
+
+/* helpers */
+function blobToDataURL(blob){
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(fr.result);
+    fr.onerror = rej;
+    fr.readAsDataURL(blob);
+  });
+}
+function downsampleTo(float32Array, targetLen){
+  if (float32Array.length <= targetLen) return Float32Array.from(float32Array);
+  const out = new Float32Array(targetLen);
+  const step = float32Array.length / targetLen;
+  for (let i=0;i<targetLen;i++){
+    out[i] = float32Array[Math.floor(i * step)];
+  }
+  return out;
+}
+
+/* ---------- Persistence (localStorage) ---------- */
+const PERSIST_KEY = 'algorhythm_recordings_v1';
+const persistToggle = $('persistToggle');
+persistToggle.addEventListener('change', e => { app.persist = persistToggle.checked; if (!app.persist) localStorage.removeItem(PERSIST_KEY); });
+
+function persistRecordingsIfNeeded(){
+  if (!app.persist) return;
+  try {
+    const small = app.recordings.map(r => ({
+      id: r.id, name: r.name, dataUrl: r.dataUrl, created: r.created, duration: r.duration, samples: Array.from(r.samples)
+    }));
+    localStorage.setItem(PERSIST_KEY, JSON.stringify(small));
+    $('savedCount').textContent = app.recordings.length;
+  } catch (err) {
+    console.warn('Persist failed', err);
+  }
+}
+function loadPersistedRecordings(){
+  try {
+    const raw = localStorage.getItem(PERSIST_KEY);
+    if (!raw) return;
+    const arr = JSON.parse(raw);
+    app.recordings = arr.map(r => ({...r, samples: Float32Array.from(r.samples)}));
+    $('savedCount').textContent = app.recordings.length;
+  } catch (err) { console.warn('load persisted', err) }
+}
+loadPersistedRecordings();
+
+/* ---------- Recordings UI ---------- */
+const recordingsList = $('recordingsList');
+function renderRecordings(){
+  recordingsList.innerHTML = '';
+  app.recordings.forEach((rec, idx) => {
+    const li = document.createElement('li');
+    li.className = 'recording-item';
+    li.draggable = true;
+    li.dataset.id = rec.id;
+
+    // left waveform canvas
+    const wave = document.createElement('canvas');
+    wave.className = 'record-wave';
+    wave.width = 150 * devicePixelRatio;
+    wave.height = 48 * devicePixelRatio;
+    wave.style.width = '150px'; wave.style.height = '48px';
+    drawWaveformOnCanvas(rec.samples, wave.getContext('2d'));
+
+    const meta = document.createElement('div'); meta.className='recording-meta';
+    const title = document.createElement('div'); title.className='record-title'; title.textContent = rec.name;
+    const sub = document.createElement('div'); sub.className='hint'; sub.textContent = `${formatTime(rec.duration)} • ${new Date(rec.created).toLocaleString()}`;
+    meta.appendChild(title); meta.appendChild(sub);
+
+    const actions = document.createElement('div'); actions.className='record-actions';
+    // play button (audio element)
+    const audio = document.createElement('audio'); audio.controls = true; audio.src = rec.dataUrl; audio.style.width='180px';
+    // rename
+    const renameBtn = document.createElement('button'); renameBtn.className='small-btn'; renameBtn.textContent='Rename';
+    renameBtn.onclick = ()=> {
+      const newName = prompt('Rename recording', rec.name);
+      if (newName) { rec.name = newName; persistRecordingsIfNeeded(); renderRecordings(); }
+    };
+    // download link
+    const dl = document.createElement('a'); dl.className='small-btn'; dl.textContent='Download';
+    dl.href = rec.dataUrl; dl.download = `${rec.name.replace(/\s+/g,'_')}.webm`;
+    // delete
+    const del = document.createElement('button'); del.className='small-btn'; del.textContent='Delete';
+    del.onclick = ()=> {
+      if (!confirm('Delete this recording?')) return;
+      app.recordings = app.recordings.filter(r=> r.id !== rec.id);
+      persistRecordingsIfNeeded(); renderRecordings();
+    };
+    actions.appendChild(renameBtn); actions.appendChild(dl); actions.appendChild(del);
+
+    li.appendChild(wave);
+    const rightCol = document.createElement('div'); rightCol.style.display='flex'; rightCol.style.flexDirection='column'; rightCol.style.gap='8px';
+    rightCol.appendChild(meta); rightCol.appendChild(audio);
+    li.appendChild(rightCol);
+    li.appendChild(actions);
+
+    // drag handlers for reorder
+    li.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text/plain', rec.id);
+      e.dataTransfer.effectAllowed = 'move';
+      li.classList.add('dragging');
+    });
+    li.addEventListener('dragend', e => { li.classList.remove('dragging') });
+
+    li.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    li.addEventListener('drop', e => {
+      e.preventDefault();
+      const draggedId = e.dataTransfer.getData('text/plain');
+      const targetId = rec.id;
+      reorderRecordings(draggedId, targetId);
+    });
+
+    recordingsList.appendChild(li);
+  });
+  $('savedCount').textContent = app.recordings.length;
+}
+
+/* waveform render */
+function drawWaveformOnCanvas(samples, ctx){
+  // samples: Float32Array [-1..1]
+  ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
+  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+  ctx.lineWidth = 1.5 * devicePixelRatio;
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#2dd4bf';
+  ctx.beginPath();
+  const w = ctx.canvas.width; const h = ctx.canvas.height;
+  const len = samples.length;
+  for (let i=0;i<len;i++){
+    const x = (i/len) * w;
+    const y = (0.5 + samples[i] * 0.45) * h;
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+}
+
+/* reorder helper */
+function reorderRecordings(draggedId, targetId){
+  const draggedIdx = app.recordings.findIndex(r => r.id === draggedId);
+  const targetIdx = app.recordings.findIndex(r => r.id === targetId);
+  if (draggedIdx < 0 || targetIdx < 0) return;
+  const [moved] = app.recordings.splice(draggedIdx,1);
+  app.recordings.splice(targetIdx,0,moved);
+  persistRecordingsIfNeeded();
+  renderRecordings();
+}
+
+/* clear all */
+$('clearAllBtn').addEventListener('click', ()=> {
+  if (!confirm('Clear all recordings?')) return;
+  app.recordings = [];
+  persistRecordingsIfNeeded();
+  renderRecordings();
+});
+
+/* ---------- Piano Rendering & Playback ---------- */
+const whiteSequence = ['C','D','E','F','G','A','B'];
+const octaves = [4,5,6]; // 3 octaves
+const whiteKeysEl = $('whiteKeys'), blackKeysEl = $('blackKeys');
+const whiteKeyWidth = 60;
+
+/* black offsets relative to the first white key in an octave (in white-key units) */
+const blackOffsets = {'C#':0.65,'D#':1.65,'F#':3.65,'G#':4.65,'A#':5.65};
+
+let whiteKeyElems = [];
+
+function buildPiano(){
+  whiteKeysEl.innerHTML = '';
+  blackKeysEl.innerHTML = '';
+  whiteKeyElems = [];
+
+  octaves.forEach((oct, oi) => {
     whiteSequence.forEach(n => {
       const note = `${n}${oct}`;
-      const w = document.createElement('div');
-      w.className = 'white-key';
-      w.dataset.note = note;
-      w.innerHTML = `<div class="label">${note}</div>`;
+      const w = document.createElement('div'); w.className='white-key'; w.dataset.note = note;
+      const lbl = document.createElement('div'); lbl.className='label'; lbl.textContent = note;
+      const vel = document.createElement('div'); vel.className='vel-bar';
+      w.appendChild(lbl); w.appendChild(vel);
       whiteKeysEl.appendChild(w);
-      whiteKeys.push({el: w, note});
-      whiteIndex++;
-      // click
-      w.addEventListener('mousedown', () => {
-        onPlayNote(note);
-        w.classList.add('active');
-      });
-      w.addEventListener('mouseup', ()=> w.classList.remove('active'));
-      w.addEventListener('mouseleave', ()=> w.classList.remove('active'));
+      whiteKeyElems.push({el:w,note});
+      // pointer events
+      w.addEventListener('mousedown', async e => { e.preventDefault(); await playNote(note); activateKey(w,true); });
+      w.addEventListener('mouseup', ()=> activateKey(w,false));
+      w.addEventListener('mouseleave', ()=> activateKey(w,false));
     });
   });
 
-  // create black keys and position them absolutely (only where they exist)
-  // we must compute left offset per gap from the start of white keys container
-  // For sequence inside each octave, the black keys are: C#, D#, (no E#), F#, G#, A#
-  let totalWhite = whiteKeys.length;
-  // mapping to know where black keys go (index of the first white key in an octave)
+  // black keys (absolute positioning)
   octaves.forEach((oct, octaveIdx) => {
-    // base white key index for this octave (each octave has 7 whites)
     const base = octaveIdx * 7;
-    // for each black note in this octave
-    ['C#','D#','F#','G#','A#'].forEach(blackNote => {
-      // the position multiplier relative to the first white key * whiteKeyWidth
-      // blackOffsets above use approximate positions in white-key units
-      const offsetUnits = blackOffsets[blackNote];
-      // convert to pixels
-      const leftPx = (base + offsetUnits) * whiteKeyWidth + 12; // 12 is piano-wrap left padding used in CSS
-      const bk = document.createElement('div');
-      bk.className = 'black-key';
-      const note = `${blackNote}${oct}`;
-      bk.dataset.note = note;
-      bk.style.left = `${leftPx}px`;
-      bk.innerHTML = `<div class="label">${note}</div>`;
+    ['C#','D#','F#','G#','A#'].forEach(bkName => {
+      const leftPx = (base + (blackOffsets[bkName] || 0)) * whiteKeyWidth + 12; // 12px padding
+      const bk = document.createElement('div'); bk.className='black-key'; bk.dataset.note = `${bkName}${oct}`; bk.style.left = leftPx + 'px';
+      const lbl = document.createElement('div'); lbl.className='label'; lbl.textContent = `${bkName}${oct}`;
+      bk.appendChild(lbl);
       blackKeysEl.appendChild(bk);
-      bk.addEventListener('mousedown', () => {
-        onPlayNote(note);
-        bk.classList.add('active');
-      });
-      bk.addEventListener('mouseup', ()=> bk.classList.remove('active'));
-      bk.addEventListener('mouseleave', ()=> bk.classList.remove('active'));
+      bk.addEventListener('mousedown', async e => { e.preventDefault(); await playNote(bk.dataset.note); activateKey(bk,true); });
+      bk.addEventListener('mouseup', ()=> activateKey(bk,false));
+      bk.addEventListener('mouseleave', ()=> activateKey(bk,false));
     });
   });
+}
+buildPiano();
 
-  /* Keyboard mapping (simple, typical mapping) */
-  const keyMap = [
-    // map physical keys to notes starting from C4; this mapping is typical: z s x d c v g b h n j m , etc
-    {key:'z', note:'C4'},{key:'s',note:'C#4'},{key:'x',note:'D4'},{key:'d',note:'D#4'},{key:'c',note:'E4'},{key:'v',note:'F4'},{key:'g',note:'F#4'},{key:'b',note:'G4'},{key:'h',note:'G#4'},{key:'n',note:'A4'},{key:'j',note:'A#4'},{key:'m',note:'B4'},
-    // octave 5
-    {key:'q', note:'C5'},{key:'2',note:'C#5'},{key:'w',note:'D5'},{key:'3',note:'D#5'},{key:'e',note:'E5'},{key:'r',note:'F5'},{key:'5',note:'F#5'},{key:'t',note:'G5'},{key:'6',note:'G#5'},{key:'y',note:'A5'},{key:'7',note:'A#5'},{key:'u',note:'B5'},
-    // octave 6
-    {key:'i', note:'C6'},{key:'9',note:'C#6'},{key:'o',note:'D6'},{key:'0',note:'D#6'},{key:'p',note:'E6'}
-  ];
-  const keyToNote = {};
-  keyMap.forEach(k=> keyToNote[k.key] = k.note);
-
-  document.addEventListener('keydown', e => {
-    const k = e.key.toLowerCase();
-    if (keyToNote[k]) {
-      const note = keyToNote[k];
-      onPlayNote(note);
-      // visual highlight:
-      highlightKey(note, true);
+/* key activation */
+function activateKey(elem,on){
+  elem.classList.toggle('active', !!on);
+  // velocity effect: animate vel-bar if present
+  const vel = elem.querySelector('.vel-bar');
+  if (vel){
+    if (on){
+      vel.style.height = (20 + Math.random()*80) + 'px';
+      setTimeout(()=> vel.style.height = '0px', 220);
+    } else {
+      vel.style.height = '0px';
     }
-  });
-  document.addEventListener('keyup', e => {
-    const k = e.key.toLowerCase();
-    if (keyToNote[k]) highlightKey(keyToNote[k], false);
-  });
+  }
+}
 
-  function highlightKey(note, on){
-    // find white or black key with matching dataset.note
-    const white = whiteKeys.find(w => w.note === note);
-    if (white) {
-      white.el.classList.toggle('active', on);
-      return;
-    }
-    // black
-    const bk = Array.from(document.querySelectorAll('.black-key')).find(b => b.dataset.note === note);
-    if (bk) bk.classList.toggle('active', on);
+/* keyboard mapping (z s x d ...) - common layout */
+const keyMap = [
+  {k:'z',n:'C4'},{k:'s',n:'C#4'},{k:'x',n:'D4'},{k:'d',n:'D#4'},{k:'c',n:'E4'},{k:'v',n:'F4'},{k:'g',n:'F#4'},{k:'b',n:'G4'},{k:'h',n:'G#4'},{k:'n',n:'A4'},{k:'j',n:'A#4'},{k:'m',n:'B4'},
+  {k:'q',n:'C5'},{k:'2',n:'C#5'},{k:'w',n:'D5'},{k:'3',n:'D#5'},{k:'e',n:'E5'},{k:'r',n:'F5'},{k:'5',n:'F#5'},{k:'t',n:'G5'},{k:'6',n:'G#5'},{k:'y',n:'A5'},{k:'7',n:'A#5'},{k:'u',n:'B5'},
+  {k:'i',n:'C6'},{k:'9',n:'C#6'},{k:'o',n:'D6'},{k:'0',n:'D#6'},{k:'p',n:'E6'}
+];
+const keyToNote = {}; keyMap.forEach(x=> keyToNote[x.k] = x.n);
+document.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (!keyToNote[k]) return;
+  const note = keyToNote[k];
+  playNote(note);
+  // highlight
+  const matchWhite = whiteKeyElems.find(w => w.note === note);
+  if (matchWhite) activateKey(matchWhite.el,true);
+  const matchBlack = document.querySelector(`.black-key[data-note="${note}"]`);
+  if (matchBlack) activateKey(matchBlack,true);
+});
+document.addEventListener('keyup', e => {
+  const k = e.key.toLowerCase();
+  if (!keyToNote[k]) return;
+  const note = keyToNote[k];
+  const matchWhite = whiteKeyElems.find(w => w.note === note);
+  if (matchWhite) activateKey(matchWhite.el,false);
+  const matchBlack = document.querySelector(`.black-key[data-note="${note}"]`);
+  if (matchBlack) activateKey(matchBlack,false);
+});
+
+/* playback: attempt to load sample from assets/piano/<NOTE>.mp3 (if not, oscillator) */
+async function playNote(note){
+  const ctx = ensureAudioContext();
+  const dest = app.dest;
+  const analyser = app.analyser;
+  // try sample
+  const sampleUrl = `assets/piano/${note}.mp3`;
+  try {
+    const resp = await fetch(sampleUrl, {method:'GET', cache:'force-cache'});
+    if (!resp.ok) throw new Error('no sample');
+    const arrayBuf = await resp.arrayBuffer();
+    const buffer = await ctx.decodeAudioData(arrayBuf.slice(0));
+    const src = ctx.createBufferSource(); src.buffer = buffer;
+    const gain = ctx.createGain(); gain.gain.value = 1.0;
+    src.connect(gain); gain.connect(ctx.destination); gain.connect(dest); // hear + record
+    // also connect a splitter to analyser for visualization
+    gain.connect(analyser);
+    src.start();
+  } catch (err) {
+    // oscillator fallback (short pluck)
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const freq = noteToFrequency(note);
+    osc.frequency.value = freq;
+    osc.type = 'sine';
+    gain.gain.value = 0.0001;
+    osc.connect(gain); gain.connect(ctx.destination); gain.connect(dest);
+    gain.connect(analyser);
+    const nowt = ctx.currentTime;
+    gain.gain.exponentialRampToValueAtTime(0.6, nowt + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, nowt + 0.6);
+    osc.start(nowt);
+    osc.stop(nowt + 1.0);
   }
 
-  /* Sound playback via WebAudio. We will attempt to load a sample from assets/piano/<NOTE>.mp3
-     If not found, create an oscillator tone fallback.
-  */
-  async function onPlayNote(note){
-    const ctx = window.appState.audioContext || (window.appState.audioContext = new (window.AudioContext || window.webkitAudioContext)());
-    const dest = window.appState.dest || (window.appState.dest = ctx.createMediaStreamDestination());
-    const sampleUrl = `assets/piano/${note}.mp3`; // name pattern expected
+  // record note in deque
+  app.deque.push({note, t: Date.now()});
+  $('dequeSize').textContent = app.deque.length;
+  // clear redo stack when new input
+  app.redoStack = [];
+}
 
-    try {
-      // attempt to fetch and decode sample
-      const resp = await fetch(sampleUrl, {cache:'force-cache'});
-      if (!resp.ok) throw new Error('sample not found');
-      const arrayBuffer = await resp.arrayBuffer();
-      const buffer = await ctx.decodeAudioData(arrayBuffer);
-      const src = ctx.createBufferSource();
-      src.buffer = buffer;
-      // connect to both destination (for recording) and destination (speakers)
-      src.connect(ctx.destination);
-      src.connect(dest);
-      src.start();
-    } catch (err) {
-      // fallback oscillator (short plucky sound)
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const freq = noteToFrequency(note);
-      osc.frequency.value = freq;
-      gain.gain.value = 0.0001;
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      gain.connect(dest);
-      osc.start();
-      // quick envelope
-      gain.gain.exponentialRampToValueAtTime(0.6, ctx.currentTime + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
-      osc.stop(ctx.currentTime + 1.0);
-    }
+/* helper: note to frequency (A4=440) */
+function noteToFrequency(note){
+  const m = note.match(/^([A-G])(#?)(\d)$/);
+  if (!m) return 440;
+  const [, p, sharp, oct] = m;
+  const octave = parseInt(oct,10);
+  const semitoneMap = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+  let semis = semitoneMap[p];
+  if (sharp) semis += 1;
+  const noteNumber = semis + (octave * 12);
+  const A4 = 57;
+  const diff = noteNumber - A4;
+  return 440 * Math.pow(2, diff/12);
+}
 
-    // push into deque for later playback/undo functionality
-    window.appState.deque.pushBack({note, t: Date.now()});
-  }
+/* ---------- Playback from deque ---------- */
+function playDequeAsSequence(){
+  if (!app.deque.length) return;
+  // disable button while playing
+  playbackBtn.disabled = true;
+  const spacing = 320; // ms between notes
+  let i = 0;
+  const playNext = async () => {
+    if (i >= app.deque.length) { playbackBtn.disabled = false; return; }
+    const item = app.deque[i];
+    await playNote(item.note);
+    i++;
+    setTimeout(playNext, spacing);
+  };
+  playNext();
+}
 
-  // helper convert note name (C4) to freq (A4 = 440)
-  function noteToFrequency(note){
-    // parse note
-    const match = note.match(/^([A-G])(#?)(\d)$/);
-    if (!match) return 440;
-    const [,p, sharp, octaveStr] = match;
-    const octave = parseInt(octaveStr,10);
-    const semitoneMap = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
-    let semis = semitoneMap[p];
-    if (sharp) semis += 1;
-    // calculate semitones from C0
-    const noteNumber = semis + (octave * 12);
-    // A4 is note number 57? Simpler: compute semitone diff from A4
-    const A4noteNum = 57; // if C0 = 0, then A4 = 57
-    const diff = noteNumber - A4noteNum;
-    const freq = 440 * Math.pow(2, diff / 12);
-    return freq;
-  }
+/* undo/redo */
+$('undoBtn').addEventListener('click', () => {
+  const item = app.deque.pop();
+  if (item) app.redoStack.push(item);
+  $('dequeSize').textContent = app.deque.length;
+});
+$('redoBtn').addEventListener('click', () => {
+  const item = app.redoStack.pop();
+  if (item) app.deque.push(item);
+  $('dequeSize').textContent = app.deque.length;
+});
 
-  /* Playback from deque (simple sequential playback) */
-  const playbackBtn = document.getElementById('playbackBtn');
-  if (playbackBtn){
-    playbackBtn.addEventListener('click', async () => {
-      const items = window.appState.deque.getAll();
-      if (!items.length) return;
-      // play them one by one with a fixed note spacing (e.g. 350ms)
-      const spacing = 350;
-      for (let i=0;i<items.length;i++){
-        onPlayNote(items[i].note);
-        await sleep(spacing);
-      }
-    });
-  }
+/* ---------- Theme switch ---------- */
+$('themeSelect').addEventListener('change', e => {
+  const v = e.target.value;
+  if (v === 'purple') document.documentElement.style.setProperty('--accent', '#a78bfa');
+  else if (v === 'orange') document.documentElement.style.setProperty('--accent', '#fb923c');
+  else document.documentElement.style.setProperty('--accent', '#2dd4bf');
+});
 
-  function sleep(ms){ return new Promise(res => setTimeout(res, ms)); }
+/* ---------- Show notes toggle ---------- */
+$('showLabels').addEventListener('change', (e) => {
+  const show = e.target.checked;
+  document.querySelectorAll('.white-key .label, .black-key .label').forEach(el => el.style.display = show ? 'block' : 'none');
+});
+document.querySelectorAll('.white-key .label, .black-key .label').forEach(el => el.style.display = $('showLabels').checked ? 'block' : 'none');
 
-  // Undo / Redo simple implementation using second stack in appState
-  const undoBtn = document.getElementById('undoBtn');
-  const redoStack = [];
-  if (undoBtn){
-    undoBtn.addEventListener('click', ()=> {
-      const item = window.appState.deque.popBack();
-      if (item) {
-        redoStack.push(item);
-      }
-    });
-  }
-  const redoBtn = document.getElementById('redoBtn');
-  if (redoBtn){
-    redoBtn.addEventListener('click', ()=> {
-      const item = redoStack.pop();
-      if (item) window.appState.deque.pushBack(item);
-    });
-  }
-})();
+/* ---------- Velocity toggle (for aesthetics) ---------- */
+$('showVelocity').addEventListener('change', e => {
+  const show = e.target.checked;
+  document.querySelectorAll('.vel-bar').forEach(v => v.style.display = show ? 'block' : 'none');
+});
+document.querySelectorAll('.vel-bar').forEach(v => v.style.display = $('showVelocity').checked ? 'block' : 'none');
+
+/* ---------- Load persisted recordings UI on startup ---------- */
+renderRecordings();
+
+/* ---------- Load sample note labels display initially ---------- */
+document.querySelectorAll('.black-key .label').forEach(l => l.style.display = $('showLabels').checked ? 'block' : 'none');
+
+/* ---------- Auto-save toggle handler (persistToggle already wired earlier) ---------- */
+
+/* ---------- Utility: Draw initial empty recordings area if none ---------- */
+if (!app.recordings.length) {
+  recordingsList.innerHTML = `<div style="color:var(--muted);padding:10px">No recordings yet — hit Record to start.</div>`;
+}
+
+/* ensure we render persisted list after loaded */
+renderRecordings();
