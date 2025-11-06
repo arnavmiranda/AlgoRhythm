@@ -1,0 +1,272 @@
+:root {
+  --bg1: #0b0f19;
+  --bg2: #121a27;
+  --panel: rgba(255,255,255,0.05);
+  --accent: #9b5de5;
+  --accent2: #00f5d4;
+  --muted: #a6b2c3;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  height: 100%;
+  font-family: "Inter", sans-serif;
+  color: #e7ebf3;
+  background: linear-gradient(180deg, var(--bg1), var(--bg2));
+}
+body.instrument-page { padding: 0; display: block; }
+.app { display: flex; flex-direction: column; height: 100vh; width: 100%; }
+
+/* --- TOPBAR --- */
+.topbar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 28px;
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.brand { font-size: 20px; font-weight: 600; letter-spacing: 0.5px; color: var(--accent2); }
+.controls { display: flex; align-items: center; gap: 14px; }
+
+button, #homeBtn {
+  background: rgba(255,255,255,0.08);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 10px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  text-decoration: none;
+}
+button:hover, #homeBtn:hover { background: var(--accent2); color: #111; transform: translateY(-2px); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+#recordBtn.recording {
+  background: #e74c3c;
+  animation: recPulse 1.2s infinite alternate;
+}
+@keyframes recPulse {
+  from { box-shadow: 0 0 8px rgba(231,76,60,0.3); }
+  to { box-shadow: 0 0 20px rgba(231,76,60,0.9); }
+}
+
+.rec-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  visibility: hidden;
+  font-family: monospace;
+  background: rgba(255,255,255,0.05);
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+.rec-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #ff4d4d;
+  animation: blink 1s infinite alternate;
+}
+@keyframes blink { 0%{opacity:1;}100%{opacity:.3;} }
+
+/* --- MAIN --- */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-y: auto;
+  padding-top: 28px;
+  padding-bottom: 20px;
+}
+.visualizer {
+  width: 100%;
+  max-width: 1200px;
+  height: 200px;
+  padding: 8px 40px;
+  margin: 8px 0;
+}
+#vizCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 6px;
+  background: transparent;
+}
+.viz-divider {
+  width: 70%;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent2), var(--accent), var(--accent2));
+  border-radius: 10px;
+  margin: 10px 0 36px 0;
+  transition: transform 0.15s ease, filter 0.5s ease;
+}
+
+/* --- DRUM GRID --- */
+.drum-wrap { width: 100%; display:flex; justify-content:center; align-items:center; }
+.drum-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 28px;
+  padding: 10px 20px 60px;
+  max-width: 960px;
+}
+.drum-pad {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 14px;
+  padding: 30px 44px;
+  color: white;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.08s ease, background 0.18s ease, box-shadow 0.18s ease;
+  min-width: 140px;
+  text-align: center;
+  box-shadow: inset 0 -6px 14px rgba(0,0,0,0.35);
+}
+.drum-pad:hover {
+  background: var(--accent);
+  color: #111;
+  transform: translateY(-4px);
+}
+.drum-pad.active {
+  background: var(--accent2);
+  color: #111;
+  transform: translateY(2px) scale(1.04);
+  box-shadow: 0 0 24px var(--accent2);
+}
+
+/* --- COLLAPSIBLE DOCK --- */
+.bottom-dock {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  overflow: hidden;
+  height: 56px;
+  transition: height 0.35s ease;
+  display: flex;
+  flex-direction: column;
+  z-index: 60;
+}
+.bottom-dock.expanded { height: 320px; }
+.dock-header {
+  padding: 10px 18px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  color:var(--accent2);
+}
+.toggle-icon { transition: transform 0.4s ease; }
+.bottom-dock.expanded .toggle-icon { transform: rotate(180deg); }
+
+.recordings-list {
+  padding: 12px 18px 20px;
+  display:flex;
+  gap:18px;
+  overflow-x:auto;
+  scrollbar-width:thin;
+  scrollbar-color: rgba(255,255,255,0.15) transparent;
+}
+.recording-item {
+  min-width:280px;
+  background: rgba(255,255,255,0.08);
+  border-radius:10px;
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+}
+.recording-item:hover { background: rgba(255,255,255,0.15); }
+.recording-item input {
+  background:transparent;
+  border:none;
+  color:white;
+  text-align:center;
+  font-size:16px;
+  font-weight:600;
+}
+.recording-item audio { width:260px; }
+.recording-item .small-btn {
+  background:rgba(255,255,255,0.15);
+  border:none;
+  padding:6px 10px;
+  border-radius:8px;
+  color:var(--muted);
+  cursor:pointer;
+  font-size:13px;
+}
+.recording-item .small-btn:hover { background:var(--accent2); color:#111; }
+.brand.home-link {
+  text-decoration: none;
+  color: var(--accent2);
+  transition: color 0.2s ease, transform 0.1s ease;
+}
+.brand.home-link:hover {
+  color: var(--accent);
+  transform: scale(1.05);
+}
+/* --- UNIFIED RECORDING BUTTONS --- */
+.record-btn,
+.stop-btn {
+  border: none;
+  padding: 8px 22px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.1s;
+}
+
+.record-btn {
+  background: #ff4d4d;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(255, 77, 77, 0.4);
+}
+.record-btn:hover {
+  background: #ff6666;
+  box-shadow: 0 0 18px rgba(255, 77, 77, 0.6);
+  transform: translateY(-2px);
+}
+.record-btn.recording {
+  animation: pulseRed 1.2s infinite alternate;
+}
+@keyframes pulseRed {
+  from { box-shadow: 0 0 10px rgba(255, 77, 77, 0.3); }
+  to { box-shadow: 0 0 22px rgba(255, 77, 77, 0.8); }
+}
+
+.stop-btn {
+  background: var(--accent2);
+  color: #111;
+  box-shadow: 0 0 12px rgba(0, 245, 212, 0.4);
+}
+.stop-btn:hover {
+  background: #5ef6de;
+  transform: translateY(-2px);
+  box-shadow: 0 0 18px rgba(0, 245, 212, 0.7);
+}
+.stop-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.brand.home-link {
+  text-decoration: none;
+  color: var(--accent2);
+  font-weight: 700;
+  font-size: 20px;
+  transition: color 0.2s ease, transform 0.1s ease;
+}
+.brand.home-link:hover {
+  color: var(--accent);
+  transform: scale(1.05);
+}

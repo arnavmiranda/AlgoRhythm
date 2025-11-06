@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AlgoRhythms — Drums</title>
+
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="drums.css" />
+
+  <script src="synth-core.js" defer></script>
+  <script src="drums.js" defer></script>
+</head>
+
+<body class="instrument-page">
+<div class="app">
+
+  <!-- TOPBAR -->
+    <!-- TOPBAR -->
+    <div class="topbar" id="topbar">
+    <a href="index.html" class="brand home-link">🥁 AlgoRhythms</a>
+    <div class="controls">
+        <div class="rec-status" id="recIndicator">
+        <div class="rec-dot"></div>
+        <span id="recTimer">00:00</span>
+        </div>
+        <button id="recordBtn" class="record-btn">⏺ Record</button>
+        <button id="stopBtn" class="stop-btn" disabled>⏹ Stop</button>
+    </div>
+    </div>
+
+
+  <!-- MAIN -->
+  <div class="main" id="mainSection">
+    <div class="visualizer"><canvas id="vizCanvas"></canvas></div>
+    <div class="viz-divider" aria-hidden="true"></div>
+
+    <div class="drum-wrap">
+      <div class="drum-grid">
+        <button class="drum-pad" data-drum="kick">Kick</button>
+        <button class="drum-pad" data-drum="snare">Snare</button>
+        <button class="drum-pad" data-drum="hihat">Hi-Hat</button>
+        <button class="drum-pad" data-drum="tomh">Tom High</button>
+        <button class="drum-pad" data-drum="toml">Tom Low</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLLAPSIBLE DOCK -->
+  <div class="bottom-dock" id="bottomDock">
+    <div class="dock-header" id="dockHeader">
+      <span style="font-weight:600">🎧 Saved Recordings</span>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button id="clearAllBtn">Clear All</button>
+        <span class="toggle-icon">▲</span>
+      </div>
+    </div>
+    <div class="recordings-list" id="recordingsList"></div>
+  </div>
+</div>
+</body>
+</html>
