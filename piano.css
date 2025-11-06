@@ -298,3 +298,78 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   color: var(--accent);
   transform: scale(1.05);
 }
+/* --- UNIFIED RECORD STATUS & TIMER --- */
+.rec-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  background: rgba(255,255,255,0.05);
+  padding: 5px 12px;
+  border-radius: 8px;
+  color: var(--muted);
+  margin: 0 8px;
+}
+
+.topbar.recording .rec-status {
+  visibility: visible;
+  opacity: 1;
+}
+
+.rec-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff4d4d;
+  animation: blink 1s infinite alternate;
+}
+@keyframes blink {
+  from { opacity: 1; }
+  to { opacity: 0.3; }
+}
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+/* --- RECORD STATUS & TIMER --- */
+.rec-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  background: rgba(255,255,255,0.05);
+  padding: 5px 12px;
+  border-radius: 8px;
+  color: var(--muted);
+  margin: 0 8px;
+}
+
+.topbar.recording .rec-status {
+  opacity: 1;
+  visibility: visible;
+}
+
+.rec-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff4d4d;
+  animation: blink 1s infinite alternate;
+}
+
+@keyframes blink {
+  from { opacity: 1; }
+  to { opacity: 0.3; }
+}
