@@ -1,0 +1,45 @@
+:root {
+  --bg1: #0b0f19;
+  --bg2: #121a27;
+  --accent: #9b5de5;
+  --accent2: #00f5d4;
+  --muted: #a6b2c3;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system,"Segoe UI",Roboto, "Helvetica Neue", Arial;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:#e7ebf3}
+body.instrument-page{padding:0}
+.app{display:flex;flex-direction:column;height:100vh;width:100%}
+
+/* topbar uses your shared styles already; small override for consistent controls spacing */
+.topbar .controls { display:flex; align-items:center; gap:10px; justify-content:center; }
+
+/* visualizer */
+.visualizer { width:100%; max-width:1200px; height:160px; margin:18px auto; }
+#vizCanvas{width:100%;height:100%;display:block;background:transparent;border-radius:6px}
+.viz-divider { width:70%; height:3px; margin:10px auto 28px; background:linear-gradient(90deg,var(--accent2),var(--accent),var(--accent2)); border-radius:8px; }
+
+/* Guitar UI */
+.guitar-wrap { width:100%; display:flex; flex-direction:column; align-items:center; gap:14px; padding-bottom:60px; }
+.controls-row { display:flex; gap:18px; align-items:center; color:var(--muted); font-size:14px; margin-bottom:8px; }
+.controls-row input[type="range"] { vertical-align:middle; }
+
+/* fretboard */
+.fretboard { display:flex; gap:12px; justify-content:center; align-items:center; flex-wrap:wrap; max-width:900px; margin: 6px auto; }
+.string {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.06);
+  color: #fff;
+  padding: 18px 22px;
+  border-radius: 10px;
+  font-weight:700;
+  cursor:pointer;
+  transition: transform .08s ease, background .12s ease;
+  min-width: 80px;
+  text-align:center;
+}
+.string:hover { background: var(--accent); color:#111; transform: translateY(-3px); }
+.string.active { background: var(--accent2); color:#111; transform: translateY(2px); box-shadow:0 0 20px var(--accent2); }
+
+/* bottom dock uses shared styles */
+.recordings-list{ padding:12px 18px 20px; display:flex; gap:18px; overflow-x:auto }
