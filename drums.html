@@ -10,26 +10,24 @@
 
   <script src="synth-core.js" defer></script>
   <script src="drums.js" defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
 
 <body class="instrument-page">
 <div class="app">
 
-  <!-- TOPBAR -->
-    <div class="topbar" id="topbar">
-    <a href="index.html" class="brand home-link">🥁 AlgoRhythms</a>
+  <!-- NAVBAR -->
+  <nav class="navbar" id="topbar">
+    <a href="index.html" class="logo">🥁 AlgoRhythms</a>
     <div class="controls">
-        <button id="recordBtn" class="record-btn">⏺ Record</button>
-        
-        <div class="rec-status" id="recIndicator">
-            <div class="rec-dot"></div>
-            <span id="recTimer">00:00</span>
-        </div>
-        
-        <button id="stopBtn" class="stop-btn" disabled>⏹ Stop</button>
+      <button id="recordBtn" class="record-btn">⏺ Record</button>
+      <div class="rec-status" id="recIndicator">
+        <div class="rec-dot"></div>
+        <span id="recTimer">00:00</span>
+      </div>
+      <button id="stopBtn" class="stop-btn" disabled>⏹ Stop</button>
     </div>
-</div>
-
+  </nav>
 
   <!-- MAIN -->
   <div class="main" id="mainSection">
@@ -47,7 +45,7 @@
     </div>
   </div>
 
-  <!-- COLLAPSIBLE DOCK -->
+  <!-- BOTTOM DOCK -->
   <div class="bottom-dock" id="bottomDock">
     <div class="dock-header" id="dockHeader">
       <span style="font-weight:600">🎧 Saved Recordings</span>

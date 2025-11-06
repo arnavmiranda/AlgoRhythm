@@ -4,27 +4,26 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>AlgoRhythms — Piano</title>
-<link rel="stylesheet" href="piano.css">
+<link rel="stylesheet" href="piano.css" />
 <script src="piano.js" defer></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
 
 <body>
 <div class="app">
 
-<!-- TOPBAR -->
-<div class="topbar" id="topbar">
-  <a href="index.html" class="brand home-link">🎵 AlgoRhythms</a>
+  <!-- NAVBAR (consistent with home page) -->
+  <nav class="navbar" id="topbar">
+    <a href="index.html" class="logo">🎵 AlgoRhythms</a>
     <div class="controls">
-        <button id="recordBtn" class="record-btn">⏺ Record</button>
-        
-        <div class="rec-status" id="recIndicator">
-            <div class="rec-dot"></div>
-            <span id="recTimer">00:00</span>
-        </div>
-        
-        <button id="stopBtn" class="stop-btn" disabled>⏹ Stop</button>
+      <button id="recordBtn" class="record-btn">⏺ Record</button>
+      <div class="rec-status" id="recIndicator">
+        <div class="rec-dot"></div>
+        <span id="recTimer">00:00</span>
+      </div>
+      <button id="stopBtn" class="stop-btn" disabled>⏹ Stop</button>
     </div>
-</div>
+  </nav>
 
   <!-- MAIN -->
   <div class="main" id="mainSection">
@@ -51,6 +50,7 @@
     </div>
     <div class="recordings-list" id="recordingsList"></div>
   </div>
+
 </div>
 </body>
 </html>

@@ -1,23 +1,182 @@
-:root{
-  --bg:#0f1720;
-  --muted:#9aa4b2;
-  --card:#18202a;
-  --accent:#2dd4bf;
+:root {
+  --bg1: #0d0f17;
+  --bg2: #151728;
+  --card: rgba(255, 255, 255, 0.04);
+  --muted: #a7a3b8;
+  --accent: #a78bfa; /* main violet accent */
+  --accent2: #8b5cf6; /* soft neon violet */
+  --glow: 0 0 18px rgba(139, 92, 246, 0.25);
 }
 
-*{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
-body{background:linear-gradient(180deg,var(--bg),#02060a);color:#e6eef6;display:flex;align-items:center;justify-content:center;padding:40px;}
+/* ------------------------------
+   BASE
+------------------------------- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-.home-container{max-width:1000px;width:100%;text-align:center}
-h1{font-size:40px;margin:0 0 8px}
-.subtitle{color:var(--muted);margin-bottom:28px}
+html, body {
+  height: 100%;
+  font-family: "Inter", system-ui, sans-serif;
+  color: #e7e4f5;
+  background: linear-gradient(135deg, var(--bg1), var(--bg2));
+  background-size: 400% 400%;
+  animation: bgFlow 22s ease infinite;
+  display: flex;
+  flex-direction: column;
+}
 
-.instrument-grid{display:flex;gap:22px;justify-content:center;flex-wrap:wrap}
-.instrument-card{background:var(--card);padding:18px;border-radius:12px;text-decoration:none;color:inherit;width:220px;transition:transform .18s,box-shadow .18s;box-shadow:0 6px 18px rgba(0,0,0,.45);cursor:pointer}
-.instrument-card:hover{transform:translateY(-6px);box-shadow:0 12px 28px rgba(0,0,0,.6)}
-.instrument-card.disabled{opacity:.45;cursor:default;transform:none}
-.card-img{font-size:48px;margin-bottom:10px}
-.instrument-card h3{margin:0 0 6px}
-.instrument-card p{margin:0;color:var(--muted);font-size:14px}
+/* ------------------------------
+   NAVBAR
+------------------------------- */
+.navbar {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(26, 20, 40, 0.55);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 90%;
+  max-width: 1000px;
+  padding: 12px 22px;
+  z-index: 10;
+  box-shadow: var(--glow);
+}
 
+.logo {
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--accent);
+  letter-spacing: 0.5px;
+  transition: color 0.3s ease;
+}
+.logo:hover {
+  color: var(--accent2);
+}
+
+.nav-links a {
+  margin-left: 18px;
+  text-decoration: none;
+  color: var(--muted);
+  transition: color 0.3s, text-shadow 0.3s;
+}
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--accent);
+  text-shadow: 0 0 8px rgba(167, 139, 250, 0.3);
+}
+
+/* ------------------------------
+   MAIN CONTENT
+------------------------------- */
+.home-container {
+  margin-top: 120px;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+h1 {
+  font-size: 44px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  background: linear-gradient(to right, var(--accent), #c4b5fd);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 0.4px;
+  text-shadow: 0 0 12px rgba(167, 139, 250, 0.15);
+}
+
+.subtitle {
+  color: var(--muted);
+  margin-bottom: 36px;
+  font-size: 17px;
+}
+
+/* ------------------------------
+   INSTRUMENT GRID
+------------------------------- */
+.instrument-grid {
+  display: flex;
+  gap: 28px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 10px;
+}
+
+.instrument-card {
+  background: var(--card);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  width: 240px;
+  padding: 22px 18px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
+}
+
+.instrument-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  border-color: var(--accent2);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.25);
+}
+
+.card-img {
+  font-size: 50px;
+  margin-bottom: 14px;
+  filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.3));
+}
+
+.instrument-card h3 {
+  font-weight: 600;
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.instrument-card p {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ------------------------------
+   FOOTER
+------------------------------- */
+footer {
+  margin-top: auto;
+  text-align: center;
+  padding: 18px;
+  color: var(--muted);
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+/* ------------------------------
+   BACKGROUND ANIMATION
+------------------------------- */
+@keyframes bgFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ------------------------------
+   RESPONSIVE
+------------------------------- */
+@media (max-width: 600px) {
+  h1 { font-size: 32px; }
+  .instrument-card { width: 90%; }
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px 14px;
+  }
+  .nav-links { margin-top: 6px; }
+}

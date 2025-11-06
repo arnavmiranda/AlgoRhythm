@@ -312,3 +312,92 @@ SynthCore.playPianoLike = function(freq, opts = {}) {
   global.SynthCore = SynthCore;
 
 })(window);
+
+/* KarplusStrong Ring Buffer Class (Simulates a String) */
+class KarplusStrong {
+  // A ring buffer is implemented using a standard JavaScript Array.
+  // Dequeuing is done with shift(), and enqueuing with push().
+  constructor(frequency, sampleRate) {
+      this.sampleRate = sampleRate;
+      this.bufferLength = Math.round(this.sampleRate / frequency);
+      // Ensure minimum buffer size to prevent infinite loop/division by zero
+      this.bufferLength = Math.max(4, this.bufferLength);
+      this.buffer = new Array(this.bufferLength);
+      this.decay = 0.996; // Energy decay factor for natural string damping
+      this.filterType = 'average'; // or 'simple-lowpass'
+
+      // 1. Excitation: Fill the buffer with white noise (random numbers between -0.5 and 0.5)
+      for (let i = 0; i < this.bufferLength; i++) {
+          this.buffer[i] = (Math.random() - 0.5) * 2;
+      }
+  }
+
+  // The 'tic' or update step: Dequeue, filter, and Enqueue
+  tic() {
+      const sample1 = this.buffer.shift();
+      const sample2 = this.buffer[0]; // The new head of the queue
+
+      let newSample;
+      if (this.filterType === 'average') {
+          // Simple averaging filter (the classic Karplus-Strong low-pass)
+          newSample = (sample1 + sample2) * 0.5 * this.decay;
+      } else {
+          // Alternative: Simple low-pass filter (0.5 * z^-1 + 0.5 * z^-2)
+          // newSample = (sample1 + sample2) * 0.5 * this.decay;
+          // The simple average is usually sufficient for a classic pluck sound.
+          newSample = (sample1 + sample2) * 0.5 * this.decay;
+      }
+
+      this.buffer.push(newSample);
+      return sample1;
+  }
+}
+
+/* Guitar Pluck Function */
+SynthCore.pluckGuitarString = function(opts = {}) {
+  const ctx = SynthCore.ensure();
+  const now = ctx.currentTime;
+  // Default to A3 (220 Hz) if no frequency is provided
+  const frequency = opts.frequency || 220; 
+  
+  // 1. Create the Karplus-Strong string object
+  const ksString = new KarplusStrong(frequency, ctx.sampleRate);
+  
+  // 2. Determine how long the note should play (e.g., 2 seconds of sound)
+  const duration = 2.0;
+  const numSamples = Math.round(ctx.sampleRate * duration);
+  
+  // 3. Generate the entire waveform into an AudioBuffer
+  const audioBuffer = ctx.createBuffer(1, numSamples, ctx.sampleRate);
+  const channelData = audioBuffer.getChannelData(0);
+
+  // Run the Karplus-Strong algorithm for the full duration
+  for (let i = 0; i < numSamples; i++) {
+      channelData[i] = ksString.tic();
+  }
+
+  // 4. Create source node and connect it
+  const source = ctx.createBufferSource();
+  source.buffer = audioBuffer;
+  
+  // Gain/Envelope for a clean end fade-out
+  const gainNode = ctx.createGain();
+  const maxGain = opts.gain || 0.4;
+  gainNode.gain.setValueAtTime(maxGain, now);
+  // Simple fade-out over 2 seconds
+  gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+  source.connect(gainNode);
+  gainNode.connect(ctx.destination);
+  gainNode.connect(SynthCore.dest);
+  gainNode.connect(SynthCore.analyser);
+  
+  source.start(now);
+
+  // Clean up nodes after sound finishes
+  setTimeout(() => {
+      try { source.disconnect(); gainNode.disconnect(); } catch (e) {}
+  }, duration * 1000);
+
+  return { source, gainNode };
+};

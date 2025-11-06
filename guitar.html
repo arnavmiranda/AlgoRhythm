@@ -4,77 +4,54 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>AlgoRhythms — Guitar</title>
-
+  
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="guitar.css" />
 
   <script src="synth-core.js" defer></script>
   <script src="guitar.js" defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
 
 <body class="instrument-page">
-  <div class="app">
+<div class="app">
 
-    <!-- TOPBAR -->
-    <div class="topbar" id="topbar">
-      <a href="index.html" class="brand home-link">🎸 AlgoRhythms</a>
-      <div class="controls">
-        <button id="recordBtn" class="record-btn">⏺ Record</button>
-
-        <div class="rec-status" id="recIndicator">
-          <div class="rec-dot"></div>
-          <span id="recTimer">00:00</span>
-        </div>
-
-        <button id="stopBtn" class="stop-btn" disabled>⏹ Stop</button>
+  <!-- NAVBAR -->
+  <nav class="navbar" id="topbar">
+    <a href="index.html" class="logo">🎸 AlgoRhythms</a>
+    <div class="controls">
+      <button id="recordBtn" class="record-btn">⏺ Record</button>
+      <div class="rec-status" id="recIndicator">
+        <div class="rec-dot"></div>
+        <span id="recTimer">00:00</span>
       </div>
+      <button id="stopBtn" class="stop-btn" disabled>⏹ Stop</button>
     </div>
+  </nav>
 
-    <!-- MAIN -->
-    <div class="main" id="mainSection">
-      <div class="visualizer"><canvas id="vizCanvas"></canvas></div>
-      <div class="viz-divider" aria-hidden="true"></div>
+  <!-- MAIN SECTION -->
+  <div class="main" id="mainSection">
+    <div class="visualizer"><canvas id="vizCanvas"></canvas></div>
 
-      <div class="guitar-wrap">
-        <div class="controls-row">
-          <label>
-            <input type="checkbox" id="strumMode" /> Strum mode
-          </label>
-          <label>
-            Pick strength
-            <input id="pickStrength" type="range" min="0.2" max="1.2" step="0.05" value="0.9" />
-          </label>
-          <label>
-            Damping
-            <input id="damping" type="range" min="0.85" max="0.999" step="0.001" value="0.95" />
-          </label>
-        </div>
-
-        <div class="fretboard" id="fretboard" aria-hidden="false">
-          <!-- six strings, open tuning E A D G B E (standard) -->
-          <button class="string" data-freq="82.4069">E2</button>
-          <button class="string" data-freq="110.000">A2</button>
-          <button class="string" data-freq="146.832">D3</button>
-          <button class="string" data-freq="196.00">G3</button>
-          <button class="string" data-freq="246.942">B3</button>
-          <button class="string" data-freq="329.628">E4</button>
-        </div>
-
-        <div style="text-align:center;margin-top:10px;color:var(--muted)">Click a string to pluck — enable “Strum mode” to strum all strings left→right</div>
-      </div>
-    </div>
-
-    <!-- RECORDINGS DOCK -->
-    <div class="bottom-dock" id="bottomDock">
-      <div class="dock-header" id="dockHeader">
-        <span style="font-weight:600">🎧 Saved Recordings</span>
-        <div style="display:flex;align-items:center;gap:12px">
-          <button id="clearAllBtn">Clear All</button>
-          <span class="toggle-icon">▲</span>
-        </div>
-      </div>
-      <div class="recordings-list" id="recordingsList"></div>
+    <div class="guitar-wrap">
+      <div class="guitar-neck" id="guitarNeck"></div>
     </div>
   </div>
+
+  <!-- BOTTOM DOCK -->
+  <div class="bottom-dock" id="bottomDock">
+    <div class="dock-header" id="dockHeader">
+      <span style="font-weight:600">🎧 Saved Recordings</span>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button id="clearAllBtn">Clear All</button>
+        <span class="dock-arrow">▲</span>
+      </div>
+    </div>
+    <div class="dock-content">
+      <div id="recordingsList"></div>
+    </div>
+  </div>
+
+</div>
 </body>
 </html>
