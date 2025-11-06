@@ -1,38 +1,36 @@
 :root {
-  --bg1: #0f1720;
-  --bg2: #0a0f15;
-  --card: rgba(24, 32, 42, 0.6);
-  --accent: #f57c00;
-  --accent2: #ffa726;
-  --muted: #a0acb9;
-  --string-color: rgba(245, 245, 245, 0.25);
-  --fretboard: #1b1e24;
+  --bg1: #150014;
+  --bg2: #0a0a1a;
+  --accent: #ff006e;   /* Main Magenta */
+  --accent2: #ff4d6d;  /* Secondary Coral Red */
+  --muted: #b1a4b9;
+  --card: rgba(26, 22, 31, 0.65);
 }
 
-/* RESET */
+/* reset styles */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
+
 html, body {
   height: 100%;
   font-family: "Inter", sans-serif;
-  color: #e6eef6;
+  color: #f3eef5;
   background: linear-gradient(135deg, var(--bg1), var(--bg2));
   background-size: 400% 400%;
   animation: bgFlow 18s ease infinite;
   overflow: hidden;
 }
+
 .app {
   display: flex;
   flex-direction: column;
   height: 100vh;
 }
 
-/* ------------------------------
-   NAVBAR (Unified Design)
-------------------------------- */
+/* navigation bar */
 .navbar {
   position: fixed;
   top: 16px;
@@ -40,7 +38,7 @@ html, body {
   transform: translateX(-50%);
   width: 92%;
   max-width: 1000px;
-  background: rgba(18, 25, 35, 0.7);
+  background: rgba(18, 20, 30, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
   backdrop-filter: blur(14px);
@@ -51,25 +49,25 @@ html, body {
   z-index: 20;
   transition: box-shadow 0.3s ease;
 }
+
 .navbar.recording {
-  box-shadow: 0 0 20px rgba(255, 167, 38, 0.4);
+  box-shadow: 0 0 20px rgba(255, 0, 110, 0.4);
 }
 
 .logo {
   font-weight: 800;
   font-size: 20px;
-  color: var(--accent2);
+  color: var(--accent);
   text-decoration: none;
   transition: color 0.3s ease, transform 0.2s ease;
 }
+
 .logo:hover {
-  color: var(--accent);
+  color: var(--accent2);
   transform: scale(1.05);
 }
 
-/* ------------------------------
-   BUTTONS & RECORDING CONTROLS
-------------------------------- */
+/* Controls */
 .controls {
   display: flex;
   align-items: center;
@@ -85,36 +83,22 @@ button {
   transition: all 0.25s ease;
 }
 
+/* recording button */
 .record-btn {
   background: #ff4d4d;
   color: #fff;
   padding: 8px 20px;
   box-shadow: 0 0 12px rgba(255, 77, 77, 0.4);
 }
+
 .record-btn:hover {
   background: #ff6666;
   box-shadow: 0 0 18px rgba(255, 77, 77, 0.6);
   transform: translateY(-2px);
 }
+
 .record-btn.recording {
   animation: pulseRed 1.2s infinite alternate;
-}
-
-.stop-btn {
-  background: var(--accent2);
-  color: #111;
-  padding: 8px 20px;
-  box-shadow: 0 0 12px rgba(255, 167, 38, 0.4);
-}
-.stop-btn:hover {
-  background: var(--accent);
-  box-shadow: 0 0 18px rgba(255, 167, 38, 0.6);
-  transform: translateY(-2px);
-}
-.stop-btn:disabled {
-  opacity: 0.5;
-  box-shadow: none;
-  cursor: not-allowed;
 }
 
 @keyframes pulseRed {
@@ -122,9 +106,27 @@ button {
   to { box-shadow: 0 0 22px rgba(255, 77, 77, 0.8); }
 }
 
-/* ------------------------------
-   RECORD STATUS
-------------------------------- */
+/* Stop button */
+.stop-btn {
+  background: var(--accent);
+  color: #111;
+  padding: 8px 20px;
+  box-shadow: 0 0 12px rgba(255, 0, 110, 0.4);
+}
+
+.stop-btn:hover {
+  background: var(--accent2);
+  box-shadow: 0 0 18px rgba(255, 0, 110, 0.6);
+  transform: translateY(-2px);
+}
+
+.stop-btn:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* recording indicator */
 .rec-status {
   display: flex;
   align-items: center;
@@ -140,10 +142,12 @@ button {
   color: var(--muted);
   transition: opacity 0.3s ease;
 }
+
 .navbar.recording .rec-status {
   visibility: visible;
   opacity: 1;
 }
+
 .rec-dot {
   width: 8px;
   height: 8px;
@@ -151,14 +155,13 @@ button {
   background: #ff4d4d;
   animation: blink 1s infinite alternate;
 }
+
 @keyframes blink {
   from { opacity: 1; }
   to { opacity: 0.3; }
 }
 
-/* ------------------------------
-   MAIN SECTION
-------------------------------- */
+/* main area */
 .main {
   flex: 1;
   display: flex;
@@ -169,127 +172,126 @@ button {
   scroll-behavior: smooth;
 }
 
+/* visualizer */
 .visualizer {
   width: 80%;
-  height: 160px;
-  margin-bottom: 16px;
+  height: 180px;
+  margin-bottom: 12px;
 }
+
 #vizCanvas {
   width: 100%;
   height: 100%;
   display: block;
 }
 
-/* ------------------------------
-   GUITAR VISUALS
-------------------------------- */
-.guitar-wrap {
+.viz-divider {
+  width: 70%;
+  height: 3px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent));
+  margin: 16px 0 36px;
+  transition: transform 0.15s ease;
+}
+
+/* drums */
+.drum-wrap {
   width: 100%;
-  max-width: 900px;
-  padding: 20px;
-}
-.guitar-neck {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 10px;
-  padding: 20px;
-  background: var(--fretboard);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-  position: relative;
-  overflow: hidden;
-}
-.guitar-neck::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(
-    to bottom,
-    var(--string-color) 0px,
-    var(--string-color) 1px,
-    transparent 1px,
-    transparent 28px
-  );
-}
-
-/* Pluck Pads */
-.pluck-pad {
-  height: 160px;
   display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px;
-  color: var(--accent2);
-  font-weight: 600;
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.15s ease;
-}
-.pluck-pad:hover {
-  background: rgba(255,255,255,0.08);
-  transform: translateY(-2px);
-}
-.pluck-pad.plucked {
-  background: rgba(255,255,255,0.1);
-  box-shadow: 0 0 18px var(--accent2);
+  justify-content: center;
 }
 
-/* ------------------------------
-   BOTTOM DOCK
-------------------------------- */
+.drum-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 28px;
+  justify-items: center;
+  align-items: center;
+  padding: 10px 20px 60px;
+  max-width: 1000px;
+  width: 100%;
+}
+
+.drum-pad {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 28px 36px;
+  min-width: 120px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  text-align: center;
+  transition: transform 0.08s ease, background 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: inset 0 -6px 14px rgba(0, 0, 0, 0.3);
+}
+
+.drum-pad:hover {
+  background: var(--accent);
+  color: #111;
+  transform: translateY(-4px);
+}
+
+.drum-pad.active {
+  background: var(--accent2);
+  color: #111;
+  transform: translateY(2px) scale(1.04);
+  box-shadow: 0 0 24px var(--accent2);
+}
+
+/* bottom dock */
 .bottom-dock {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(18, 25, 35, 0.8);
+  background: rgba(18, 20, 30, 0.8);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(14px);
-  overflow: hidden;
   height: 56px;
-  transition: height 0.4s ease, box-shadow 0.4s ease;
   display: flex;
   flex-direction: column;
   z-index: 15;
+  transition: height 0.4s ease, box-shadow 0.4s ease;
 }
+
 .bottom-dock.expanded {
-  height: 300px;
-  box-shadow: 0 -8px 25px rgba(255, 167, 38, 0.3);
+  height: 320px;
+  box-shadow: 0 -8px 25px rgba(255, 0, 110, 0.3);
 }
 
 .dock-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 10px 18px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  color:var(--accent2);
+  color: var(--accent);
   cursor: pointer;
   font-weight: 600;
 }
-.dock-arrow {
+
+.toggle-icon {
   transition: transform 0.4s ease;
 }
-.bottom-dock.expanded .dock-arrow {
+
+.bottom-dock.expanded .toggle-icon {
   transform: rotate(180deg);
 }
 
-/* Recordings list */
-#recordingsList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
+/* recordings */
+.recordings-list {
   padding: 14px 18px;
+  display: flex;
+  gap: 18px;
   overflow-x: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.15) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
+
 .recording-item {
   min-width: 260px;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 10px;
   padding: 10px;
   display: flex;
@@ -298,9 +300,11 @@ button {
   gap: 8px;
   transition: background 0.25s ease;
 }
+
 .recording-item:hover {
-  background: rgba(255,255,255,0.14);
+  background: rgba(255, 255, 255, 0.14);
 }
+
 .recording-item input {
   background: transparent;
   border: none;
@@ -309,14 +313,13 @@ button {
   font-size: 15px;
   font-weight: 600;
 }
+
 .recording-item audio {
   width: 230px;
 }
 
-/* CLEAR ALL BUTTON (refined) */
+/* clear button */
 #clearAllBtn {
-  align-self: center;
-  margin: 10px 0 20px 0;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
@@ -327,23 +330,27 @@ button {
   cursor: pointer;
   transition: all 0.25s ease;
 }
+
 #clearAllBtn:hover {
-  background: #ff4d4d;
+  background: #ff003c;
   color: #111;
-  box-shadow: 0 0 12px rgba(255, 77, 77, 0.6);
   transform: translateY(-2px);
-}
-#clearAllBtn:active {
-  transform: translateY(0);
-  box-shadow: 0 0 6px rgba(255, 77, 77, 0.4);
+  box-shadow: 0 0 12px rgba(255, 0, 60, 0.6);
 }
 
-/* BACKGROUND ANIMATION */
+#clearAllBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 0 6px rgba(255, 0, 60, 0.4);
+}
+
+/* background animations */
 @keyframes bgFlow {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
+
+/* small action buttons */
 .recording-item .small-btn {
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -367,4 +374,18 @@ button {
 .recording-item .small-btn:active {
   transform: translateY(0);
   box-shadow: 0 0 6px rgba(255, 255, 255, 0.2);
+}
+
+/* resonsive layouts */
+@media (max-width: 700px) {
+  .drum-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 22px;
+  }
+}
+
+@media (max-width: 450px) {
+  .drum-grid {
+    grid-template-columns: 1fr;
+  }
 }

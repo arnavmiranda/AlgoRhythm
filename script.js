@@ -24,7 +24,6 @@ window.appState = {
 exportAsyncAudioContext();
 
 function exportAsyncAudioContext(){
-  // lazy-create audio context to respect browser autoplay policies
   if (!window.appState.audioContext){
     const Ctx = window.AudioContext || window.webkitAudioContext;
     window.appState.audioContext = new Ctx();
@@ -34,7 +33,7 @@ function exportAsyncAudioContext(){
   }
 }
 
-/* Recording controls */
+/* recording controls */
 const recordBtn = document.getElementById('recordBtn');
 const stopBtn = document.getElementById('stopBtn');
 const recordingsList = document.getElementById('recordingsList');

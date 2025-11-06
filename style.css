@@ -8,9 +8,7 @@
   --glow: 0 0 18px rgba(139, 92, 246, 0.25);
 }
 
-/* ------------------------------
-   BASE
-------------------------------- */
+/* base */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -28,9 +26,7 @@ html, body {
   flex-direction: column;
 }
 
-/* ------------------------------
-   NAVBAR
-------------------------------- */
+/* navigation bar */
 .navbar {
   position: fixed;
   top: 18px;
@@ -73,9 +69,7 @@ html, body {
   text-shadow: 0 0 8px rgba(167, 139, 250, 0.3);
 }
 
-/* ------------------------------
-   MAIN CONTENT
-------------------------------- */
+/* main */
 .home-container {
   margin-top: 120px;
   text-align: center;
@@ -99,9 +93,7 @@ h1 {
   font-size: 17px;
 }
 
-/* ------------------------------
-   INSTRUMENT GRID
-------------------------------- */
+/* instrument grid */
 .instrument-grid {
   display: flex;
   gap: 28px;
@@ -146,9 +138,7 @@ h1 {
   font-size: 14px;
 }
 
-/* ------------------------------
-   FOOTER
-------------------------------- */
+/* footer */
 footer {
   margin-top: auto;
   text-align: center;
@@ -158,18 +148,14 @@ footer {
   opacity: 0.8;
 }
 
-/* ------------------------------
-   BACKGROUND ANIMATION
-------------------------------- */
+/* backgorund animation */
 @keyframes bgFlow {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
 
-/* ------------------------------
-   RESPONSIVE
-------------------------------- */
+/* responsive */
 @media (max-width: 600px) {
   h1 { font-size: 32px; }
   .instrument-card { width: 90%; }

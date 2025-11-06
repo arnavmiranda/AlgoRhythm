@@ -2,7 +2,7 @@ const app={ctx:null,dest:null,an:null,recorder:null,chunks:[],recordings:[]};
 const $=id=>document.getElementById(id);
 let recStart=0,timer;
 
-/* Audio Setup */
+/* audio Setup */
 function ctxInit(){
   if(app.ctx)return app.ctx;
   const C=window.AudioContext||window.webkitAudioContext;
@@ -11,7 +11,7 @@ function ctxInit(){
   return app.ctx;
 }
 
-/* Visualizer */
+/* visualizer */
 const canvas=$("vizCanvas"), c2d=canvas.getContext("2d");
 function resize(){canvas.width=canvas.clientWidth*devicePixelRatio;canvas.height=canvas.clientHeight*devicePixelRatio;}
 resize();window.onresize=resize;
@@ -41,7 +41,7 @@ function renderViz(){
 }
 renderViz();
 
-/* Piano */
+/* piano */
 const notes=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"],octs=[4,5,6];
 const w=$("whiteKeys"),b=$("blackKeys"),offset={"C#":0.65,"D#":1.65,"F#":3.65,"G#":4.65,"A#":5.65};
 octs.forEach(o=>notes.forEach(n=>{
@@ -77,7 +77,7 @@ function freq(n){const m=n.match(/^([A-G])(#?)(\d)$/);if(!m)return 440;
 const map={C:0,D:2,E:4,F:5,G:7,A:9,B:11};let s=map[m[1]]+(m[2]?1:0);
 return 440*Math.pow(2,(s+m[3]*12-57)/12);}
 
-/* Recording */
+/* recording */
 const recBtn=$("recordBtn"),stopBtn=$("stopBtn"),recInd=$("recIndicator"),
 recTime=$("recTimer"),topbar=$("topbar");
 recBtn.onclick=startRec;stopBtn.onclick=stopRec;
@@ -107,7 +107,7 @@ async function saveRec(){
   renderRecs();
 }
 
-/* Render Recordings */
+/* render recordings */
 function renderRecs(){
   const list=$("recordingsList");list.innerHTML="";
   app.recordings.forEach((r,i)=>{
@@ -125,14 +125,14 @@ function renderRecs(){
 }
 $("clearAllBtn").onclick=()=>{if(confirm("Clear all recordings?")){app.recordings=[];renderRecs();}};
 
-/* Collapsible Dock */
+/* collapsible dock */
 const dock=$("bottomDock"),dockHeader=$("dockHeader");
 dockHeader.onclick=()=>{
   dock.classList.toggle("expanded");
   const main=$("mainSection");
   if(dock.classList.contains("expanded")) main.scrollTo({top:0,behavior:"smooth"});
 };
-/* --- Toggle Note Labels --- */
+/* toggle note */
 const toggleBtn = $("toggleLabelsBtn");
 let labelsVisible = true;
 
@@ -140,7 +140,7 @@ toggleBtn.onclick = () => {
   labelsVisible = !labelsVisible;
   toggleBtn.classList.toggle("active", labelsVisible);
 
-  // Show/hide all text labels on keys
+  // show/hide all text labels on keys
   document.querySelectorAll(".white-key, .black-key").forEach(k => {
     k.textContent = labelsVisible ? k.dataset.note : "";
   });

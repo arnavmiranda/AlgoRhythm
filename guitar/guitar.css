@@ -2,37 +2,35 @@
   --bg1: #0f1720;
   --bg2: #0a0f15;
   --card: rgba(24, 32, 42, 0.6);
-  --accent: #2dd4bf;
+  --accent: #f57c00;
+  --accent2: #ffa726;
   --muted: #a0acb9;
-  --white-key: #fff;
-  --black-key: #0b0b0d;
+  --string-color: rgba(245, 245, 245, 0.25);
+  --fretboard: #1b1e24;
 }
 
+/* reset */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
-
 html, body {
   height: 100%;
-  overflow: hidden;
   font-family: "Inter", sans-serif;
   color: #e6eef6;
   background: linear-gradient(135deg, var(--bg1), var(--bg2));
   background-size: 400% 400%;
   animation: bgFlow 18s ease infinite;
+  overflow: hidden;
 }
-
 .app {
   display: flex;
   flex-direction: column;
   height: 100vh;
 }
 
-/* ------------------------------
-   NAVBAR (Glassmorphic redesign)
-------------------------------- */
+/* navigation bar */
 .navbar {
   position: fixed;
   top: 16px;
@@ -52,37 +50,35 @@ html, body {
   transition: box-shadow 0.3s ease;
 }
 .navbar.recording {
-  box-shadow: 0 0 20px rgba(45, 212, 191, 0.4);
+  box-shadow: 0 0 20px rgba(255, 167, 38, 0.4);
 }
 
 .logo {
   font-weight: 800;
   font-size: 20px;
-  color: var(--accent);
+  color: var(--accent2);
   text-decoration: none;
   transition: color 0.3s ease, transform 0.2s ease;
 }
 .logo:hover {
-  color: #60a5fa;
+  color: var(--accent);
   transform: scale(1.05);
 }
 
+/* buttons and controls */
 .controls {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-/* ------------------------------
-   BUTTONS
-------------------------------- */
 button {
   border: none;
   border-radius: 10px;
   font-weight: 600;
+  font-size: 15px;
   cursor: pointer;
   transition: all 0.25s ease;
-  font-size: 15px;
 }
 
 .record-btn {
@@ -101,14 +97,14 @@ button {
 }
 
 .stop-btn {
-  background: var(--accent);
+  background: var(--accent2);
   color: #111;
   padding: 8px 20px;
-  box-shadow: 0 0 12px rgba(45, 212, 191, 0.4);
+  box-shadow: 0 0 12px rgba(255, 167, 38, 0.4);
 }
 .stop-btn:hover {
-  background: #5ef6de;
-  box-shadow: 0 0 18px rgba(45, 212, 191, 0.6);
+  background: var(--accent);
+  box-shadow: 0 0 18px rgba(255, 167, 38, 0.6);
   transform: translateY(-2px);
 }
 .stop-btn:disabled {
@@ -122,9 +118,7 @@ button {
   to { box-shadow: 0 0 22px rgba(255, 77, 77, 0.8); }
 }
 
-/* ------------------------------
-   RECORDING STATUS
-------------------------------- */
+/* recording */
 .rec-status {
   display: flex;
   align-items: center;
@@ -140,12 +134,10 @@ button {
   color: var(--muted);
   transition: opacity 0.3s ease;
 }
-
 .navbar.recording .rec-status {
   visibility: visible;
   opacity: 1;
 }
-
 .rec-dot {
   width: 8px;
   height: 8px;
@@ -158,23 +150,20 @@ button {
   to { opacity: 0.3; }
 }
 
-/* ------------------------------
-   MAIN CONTENT
-------------------------------- */
+/* main */
 .main {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  overflow-y: auto;
   padding-top: 120px;
+  overflow-y: auto;
   scroll-behavior: smooth;
-  transition: transform 0.4s ease;
 }
 
 .visualizer {
   width: 80%;
-  height: 100px;
+  height: 160px;
   margin-bottom: 16px;
 }
 #vizCanvas {
@@ -183,106 +172,63 @@ button {
   display: block;
 }
 
-/* ------------------------------
-   PIANO KEYS
-------------------------------- */
-.piano-wrap {
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  overflow-x: auto;
-  padding-bottom: 60px;
+/* guitar visuals */
+.guitar-wrap {
+  width: 100%;
+  max-width: 900px;
+  padding: 20px;
 }
-
-.piano {
+.guitar-neck {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  padding: 20px;
+  background: var(--fretboard);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
   position: relative;
-  width: calc(75px * 21);
-  height: 340px;
-  max-width: 100%;
+  overflow: hidden;
 }
-
-.white-keys {
-  display: flex;
-  height: 320px;
-}
-.white-key {
-  width: 75px;
-  height: 320px;
-  background: var(--white-key);
-  border: 1px solid #ccc;
-  border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  color: #111;
-  user-select: none;
-  transition: transform 0.05s, background 0.1s, box-shadow 0.1s;
-  box-shadow: inset 0 -4px 10px rgba(0,0,0,0.15);
-}
-.white-key.active {
-  transform: translateY(3px);
-  background: #f1f6ff;
-  box-shadow: 0 0 20px var(--accent);
-}
-
-.black-keys {
+.guitar-neck::before {
+  content: "";
   position: absolute;
-  top: 0;
-  height: 210px;
+  top: 0; left: 0; right: 0; bottom: 0;
   pointer-events: none;
-}
-.black-key {
-  position: absolute;
-  width: 52px;
-  height: 210px;
-  background: var(--black-key);
-  border-radius: 0 0 8px 8px;
-  z-index: 5;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  pointer-events: auto;
-  color: white;
-  transition: transform 0.05s, background 0.1s, box-shadow 0.1s;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.7);
-}
-.black-key.active {
-  transform: translateY(3px);
-  background: #333;
-  box-shadow: 0 0 25px var(--accent);
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--string-color) 0px,
+    var(--string-color) 1px,
+    transparent 1px,
+    transparent 28px
+  );
 }
 
-/* ------------------------------
-   TOGGLE BUTTON
-------------------------------- */
-.piano-toggle {
-  margin-top: 12px;
-}
-#toggleLabelsBtn {
-  background: rgba(255,255,255,0.08);
+/* pluck pads */
+.pluck-pad {
+  height: 160px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.1);
-  color: var(--muted);
   border-radius: 8px;
-  padding: 6px 14px;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.25s ease;
+  color: var(--accent2);
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
 }
-#toggleLabelsBtn:hover {
-  background: var(--accent);
-  color: #111;
+.pluck-pad:hover {
+  background: rgba(255,255,255,0.08);
   transform: translateY(-2px);
 }
-#toggleLabelsBtn.active {
-  background: #60a5fa;
-  color: #111;
-  box-shadow: 0 0 12px #60a5fa;
+.pluck-pad.plucked {
+  background: rgba(255,255,255,0.1);
+  box-shadow: 0 0 18px var(--accent2);
 }
 
-/* ------------------------------
-   BOTTOM DOCK
-------------------------------- */
+/* bottom dock */
 .bottom-dock {
   position: fixed;
   bottom: 0;
@@ -292,119 +238,100 @@ button {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(14px);
   overflow: hidden;
-  height: 54px;
+  height: 56px;
   transition: height 0.4s ease, box-shadow 0.4s ease;
   display: flex;
   flex-direction: column;
   z-index: 15;
 }
 .bottom-dock.expanded {
-  height: 320px;
-  box-shadow: 0 -8px 25px rgba(45, 212, 191, 0.3);
+  height: 300px;
+  box-shadow: 0 -8px 25px rgba(255, 167, 38, 0.3);
 }
 
 .dock-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 20px;
-  color: var(--accent);
+  padding: 10px 18px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  color:var(--accent2);
   cursor: pointer;
   font-weight: 600;
 }
-
-.toggle-icon {
-  transition: transform 0.3s ease;
+.dock-arrow {
+  transition: transform 0.4s ease;
 }
-.bottom-dock.expanded .toggle-icon {
+.bottom-dock.expanded .dock-arrow {
   transform: rotate(180deg);
 }
 
-.recordings-list {
+/* recording list */
+#recordingsList {
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 14px 18px;
   overflow-x: auto;
-  padding: 16px 20px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  scrollbar-color: rgba(255,255,255,0.15) transparent;
 }
-
 .recording-item {
-  min-width: 300px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 14px;
+  min-width: 260px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   transition: background 0.25s ease;
 }
 .recording-item:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255,255,255,0.14);
 }
-
 .recording-item input {
   background: transparent;
   border: none;
   color: white;
   text-align: center;
-  font-weight: 600;
   font-size: 15px;
+  font-weight: 600;
 }
-
 .recording-item audio {
-  width: 260px;
+  width: 230px;
 }
 
-.small-btn {
-  background: rgba(255,255,255,0.15);
-  border: none;
+/* clear button */
+#clearAllBtn {
+  align-self: center;
+  margin: 10px 0 20px 0;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  padding: 6px 10px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 16px;
   cursor: pointer;
   transition: all 0.25s ease;
 }
-.small-btn:hover {
-  background: var(--accent);
+#clearAllBtn:hover {
+  background: #ff4d4d;
   color: #111;
+  box-shadow: 0 0 12px rgba(255, 77, 77, 0.6);
+  transform: translateY(-2px);
+}
+#clearAllBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 0 6px rgba(255, 77, 77, 0.4);
 }
 
-/* ------------------------------
-   BACKGROUND ANIMATION
-------------------------------- */
+/* background animation */
 @keyframes bgFlow {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
-#clearAllBtn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 500;
-  padding: 6px 14px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  backdrop-filter: blur(8px);
-}
-
-#clearAllBtn:hover {
-  background: var(--accent);
-  color: #111;
-  transform: translateY(-2px);
-  box-shadow: 0 0 12px rgba(45, 212, 191, 0.6);
-}
-
-#clearAllBtn:active {
-  transform: translateY(0);
-  box-shadow: 0 0 6px rgba(45, 212, 191, 0.4);
-}
-
 .recording-item .small-btn {
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.08);

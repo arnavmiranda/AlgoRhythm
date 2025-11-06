@@ -1,8 +1,3 @@
-/* -------------------------------------------------------------------------------------------------
-   Guitar Visualizer + Recorder Logic
-   (with SynthCore integration, Karplus-Strong strings, and waveform visualizer)
---------------------------------------------------------------------------------------------------- */
-
 const app = {
   ctx: null,
   dest: null,
@@ -20,16 +15,13 @@ let timer = null;
 let vizRunning = false;
 let vizRAF = null;
 
-/* -------------------------------------------------------------------------------------------------
-   AUDIO SETUP
---------------------------------------------------------------------------------------------------- */
+/* audio setup */
 function ctxInit() {
   if (app.ctx) return app.ctx;
 
   const C = window.AudioContext || window.webkitAudioContext;
   app.ctx = new C();
 
-  // Expect SynthCore to provide ensure(), dest, and analyser
   if (typeof SynthCore === "undefined" || typeof SynthCore.ensure !== "function") {
     console.warn("SynthCore not available yet. Call SynthCore.ensure() when available.");
   } else {
@@ -38,7 +30,6 @@ function ctxInit() {
     app.an = SynthCore.analyser || app.ctx.createAnalyser();
   }
 
-  // Ensure analyser exists
   if (!app.an) {
     app.an = app.ctx.createAnalyser();
     app.an.fftSize = 1024;
@@ -46,15 +37,15 @@ function ctxInit() {
     app.an.fftSize = 1024;
   }
 
-  // Create master bus to route to speakers, recorder, and visualizer
+  // create master bus to route to speakers, recorder, and visualizer
   if (!app.master) {
     app.master = app.ctx.createGain();
     app.master.gain.value = 1.0;
 
-    // Speakers
+    // speaker
     try { app.master.connect(app.ctx.destination); } catch (e) {}
 
-    // Recorder destination (SynthCore.dest should be MediaStreamDestination)
+    // recorder destination(SynthCore.dest should be MediaStreamDestination)
     if (app.dest && app.dest.stream) {
       try { app.master.connect(app.dest); } catch (e) {}
     }
@@ -66,9 +57,7 @@ function ctxInit() {
   return app.ctx;
 }
 
-/* -------------------------------------------------------------------------------------------------
-   VISUALIZER SETUP
---------------------------------------------------------------------------------------------------- */
+/* visualizer setup */
 const canvas = $("vizCanvas");
 const c2d = canvas ? canvas.getContext("2d") : null;
 
@@ -79,26 +68,20 @@ function resizeViz() {
   const ch = canvas.clientHeight || 200;
   const ratio = window.devicePixelRatio || 1;
 
-  // Use integers to avoid subpixel blurriness
   canvas.width = Math.max(1, Math.floor(cw * ratio));
   canvas.height = Math.max(1, Math.floor(ch * ratio));
 
-  // Draw in CSS pixels by scaling the context
   c2d.setTransform(ratio, 0, 0, ratio, 0, 0);
 }
 
 window.addEventListener("resize", resizeViz);
 resizeViz();
 
-/* -------------------------------------------------------------------------------------------------
-   VISUALIZATION STATE
---------------------------------------------------------------------------------------------------- */
+/* visualization state */
 const BAR_COUNT = 32; // kept for future use; waveform uses analyser bins
 let hue = 30;
 
-/* -------------------------------------------------------------------------------------------------
-   RENDER VISUALIZER
---------------------------------------------------------------------------------------------------- */
+/* render the visualizer */
 function renderViz() {
   ctxInit();
   if (!app.an || !c2d || !canvas) {
@@ -106,7 +89,7 @@ function renderViz() {
     return;
   }
 
-  // Read time-domain data
+  // read time-domain data
   const bufferLength = app.an.frequencyBinCount || 1024;
   const data = new Uint8Array(bufferLength);
   app.an.getByteTimeDomainData(data);
@@ -115,19 +98,19 @@ function renderViz() {
   const ch = canvas.clientHeight;
   c2d.clearRect(0, 0, cw, ch);
 
-  // Compute average deviation from center (128)
+  // compute average deviation from center 
   let sum = 0;
   for (let i = 0; i < data.length; i++) sum += Math.abs(data[i] - 128);
   const avg = data.length ? sum / data.length : 0;
 
-  // Animate hue
+  // animate the hue
   hue = (hue + 0.6) % 360;
 
-  // Dynamic line width (scaled by devicePixelRatio)
+  // dynamic line width (scaled by devicePixelRatio)
   const dpr = window.devicePixelRatio || 1;
   c2d.lineWidth = Math.max(1.0, avg / 30) * dpr;
 
-  // Neon gradient stroke
+  // gradient
   const grad = c2d.createLinearGradient(0, 0, cw, 0);
   grad.addColorStop(0, `hsl(${(hue - 40 + 360) % 360}, 95%, 65%)`);
   grad.addColorStop(0.5, `hsl(${hue}, 95%, 50%)`);
@@ -136,7 +119,7 @@ function renderViz() {
   c2d.lineJoin = "round";
   c2d.lineCap = "round";
 
-  // Draw waveform
+  // draw the waveform
   c2d.beginPath();
   const sliceWidth = cw / data.length;
   let x = 0;
@@ -156,9 +139,7 @@ function renderViz() {
   if (vizRunning) vizRAF = requestAnimationFrame(renderViz);
 }
 
-/* -------------------------------------------------------------------------------------------------
-   STRINGS (Karplus–Strong)
---------------------------------------------------------------------------------------------------- */
+/* strings using karplus strong algorithm */
 const GUITAR_STRINGS = [
   { name: "E2", frequency: 82.41, color: "#ff2079" },
   { name: "A2", frequency: 110.00, color: "#7928ca" },
@@ -168,13 +149,11 @@ const GUITAR_STRINGS = [
   { name: "E4", frequency: 329.63, color: "#ff9900" },
 ];
 
-/* -------------------------------------------------------------------------------------------------
-   UI INITIALIZATION
---------------------------------------------------------------------------------------------------- */
+/* UI initialization */
 function initGuitar() {
   ctxInit();
 
-  // Start visualizer loop
+  // start visualizer loop
   if (!vizRunning) {
     vizRunning = true;
     resizeViz();
@@ -184,7 +163,7 @@ function initGuitar() {
   const neck = $("guitarNeck");
   if (!neck) return;
 
-  // Clear existing pads (safe re-init)
+  // safety re initialization
   neck.innerHTML = "";
 
   GUITAR_STRINGS.forEach(string => {
@@ -223,9 +202,7 @@ function initGuitar() {
 
 window.addEventListener("load", initGuitar);
 
-/* -------------------------------------------------------------------------------------------------
-   RECORDING LOGIC
---------------------------------------------------------------------------------------------------- */
+/* logic for recording */
 const recordBtn = $("recordBtn");
 const stopBtn = $("stopBtn");
 const topbar = $("topbar");
@@ -313,9 +290,7 @@ async function saveRec() {
   renderRecs();
 }
 
-/* -------------------------------------------------------------------------------------------------
-   RECORDINGS UI
---------------------------------------------------------------------------------------------------- */
+/* recording UI */
 function renderRecs() {
   const list = $("recordingsList");
   if (!list) return;
@@ -346,9 +321,7 @@ function renderRecs() {
   });
 }
 
-/* -------------------------------------------------------------------------------------------------
-   BUTTONS + DOCK
---------------------------------------------------------------------------------------------------- */
+/* buttons and dock */
 if (recordBtn) recordBtn.addEventListener("click", startRec);
 if (stopBtn) stopBtn.addEventListener("click", stopRec);
 

@@ -1,11 +1,7 @@
-/* -------------------------------------------------------------------------------------------------
-   AlgoRhythms — Drums Logic
-   (updated: 32 bars + robust glow)
---------------------------------------------------------------------------------------------------- */
-/* Neon / Cyberpunk palette */
+/* color pallete */
 const PALETTE = ["#ff0080", "#7928ca", "#00f0ff", "#4b0082", "#ff2079"];
 
-/* App state */
+/* app state */
 const app = {
   ctx: null,
   dest: null,
@@ -19,9 +15,7 @@ const $ = id => document.getElementById(id);
 
 let recStart = 0, timer;
 
-/* -------------------------------------------------------------------------------------------------
-   AUDIO SETUP
---------------------------------------------------------------------------------------------------- */
+/* audio setup */
 function ctxInit() {
   if (app.ctx) return app.ctx;
 
@@ -31,7 +25,7 @@ function ctxInit() {
   app.an = app.ctx.createAnalyser();
   app.an.fftSize = 1024;
 
-  // ✅ Keep the graph alive even when silent
+  // graph alive even when silent
   const silence = app.ctx.createOscillator();
   const gain = app.ctx.createGain();
   gain.gain.value = 0.00001; // inaudible but nonzero
@@ -41,14 +35,12 @@ function ctxInit() {
   return app.ctx;
 }
 
-/* -------------------------------------------------------------------------------------------------
-   VISUALIZER SETUP
---------------------------------------------------------------------------------------------------- */
+/* visualizer setup */
 const canvas = $("vizCanvas");
 const c2d = canvas ? canvas.getContext("2d") : null;
 let vizRAF = null, vizRunning = false;
 
-/* DPR-aware resize (draw in CSS pixels) */
+/* DPR-aware resize (in CSS pixels) */
 function resizeViz() {
   if (!canvas || !c2d) return;
 
@@ -64,14 +56,11 @@ function resizeViz() {
 window.addEventListener("resize", resizeViz);
 resizeViz();
 
-/* Visualizer config: reduced bars */
+/* visualizer config */
 const BAR_COUNT = 32;
 let vizBars = new Array(BAR_COUNT).fill(0);
 let pulse = 0;
 
-/* -------------------------------------------------------------------------------------------------
-   RENDER: minimal neon bars + robust glow
---------------------------------------------------------------------------------------------------- */
 function renderViz() {
   if (!app.an) {
     try { ctxInit(); } catch (e) {}
@@ -87,32 +76,21 @@ function renderViz() {
   const freqData = new Uint8Array(bufferLength);
   app.an.getByteFrequencyData(freqData);
 
-  // CSS pixel dims
+  // pixel dims
   const cw = canvas.clientWidth;
   const ch = canvas.clientHeight;
 
-  // Geometry
+  // geometry
   const bars = vizBars.length;
   const slot = cw / bars;
   const barWidth = Math.max(3, slot * 0.68);
   const gap = Math.max(2, slot * 0.32);
 
-  // Clear canvas
+  // clear canvas
   c2d.clearRect(0, 0, cw, ch);
 
-  // --- Subtle base radial glow ---
-  // const rg = c2d.createRadialGradient(cw / 2, ch * 0.9, ch * 0.02, cw / 2, ch * 0.9, ch * 0.9);
-  // rg.addColorStop(0, "rgba(255, 0, 128, 0.08)");
-  // rg.addColorStop(0.25, "rgba(120, 30, 200, 0.05)");
-  // rg.addColorStop(0.6, "rgba(0, 230, 255, 0.03)");
-  // rg.addColorStop(1, "rgba(0,0,0,0)");
 
-  // c2d.globalCompositeOperation = "lighter";
-  // c2d.fillStyle = rg;
-  // c2d.fillRect(0, 0, cw, ch);
-  // c2d.globalCompositeOperation = "source-over";
-
-  // --- Update bars (logarithmic mapping) ---
+  // update bars (logarithmic mapping) 
   for (let i = 0; i < bars; i++) {
     const logIndex = Math.pow(i / bars, 2.2) * (bufferLength - 1);
     const idx = Math.floor(logIndex);
@@ -121,11 +99,11 @@ function renderViz() {
     vizBars[i] = Math.max(target, vizBars[i] - ch * 0.02);
   }
 
-  // Pulse decay and scaling
+  // pulse decay and scaling
   pulse *= 0.88;
   const pulseScale = 1 + pulse * 0.06;
 
-  // --- Draw bars ---
+  // draw bars
   let x = gap * 0.5;
   for (let i = 0; i < bars; i++) {
     const barHeight = vizBars[i];
@@ -141,7 +119,7 @@ function renderViz() {
     x += barWidth + gap;
   }
 
-  // --- Reflection / Floor glow ---
+  // reflection/floor glow
   const reflectionHeight = ch * 0.25;
   const gradient = c2d.createLinearGradient(0, ch, 0, ch - reflectionHeight);
   gradient.addColorStop(0, "rgba(255,255,255,0.06)");
@@ -172,9 +150,7 @@ function renderViz() {
   vizRAF = requestAnimationFrame(renderViz);
 }
 
-/* -------------------------------------------------------------------------------------------------
-   VIZ HELPERS
---------------------------------------------------------------------------------------------------- */
+/* viz helper */
 function startViz() {
   if (!vizRAF) {
     resizeViz();
@@ -189,7 +165,7 @@ function stopViz() {
   }
 }
 
-/* Trigger pulse (used by playDrum) */
+/* trigger pulse (used by playDrum) */
 function triggerPulse(intensity = 1) {
   pulse = Math.min(1.2, pulse + intensity * 0.6);
   const divider = document.querySelector(".viz-divider");
@@ -200,7 +176,7 @@ function triggerPulse(intensity = 1) {
   }
 }
 
-/* Divider click feedback */
+/* divider click feedback */
 document.querySelectorAll(".drum-pad").forEach(btn => {
   btn.addEventListener("mousedown", () => {
     const divider = document.querySelector(".viz-divider");
@@ -211,12 +187,10 @@ document.querySelectorAll(".drum-pad").forEach(btn => {
   });
 });
 
-/* Init audio + start visuals */
+/* initialize audio and start visuals */
 try { ctxInit(); startViz(); } catch (e) {}
 
-/* -------------------------------------------------------------------------------------------------
-   DRUM SYNTHESIS
---------------------------------------------------------------------------------------------------- */
+/* drum synthesis */
 function playDrum(type, el) {
   const ctx = ctxInit();
   const { dest, an } = app;
@@ -298,14 +272,12 @@ function playDrum(type, el) {
   }
 }
 
-/* Bind pads */
+/* bind pads */
 document.querySelectorAll(".drum-pad").forEach(btn => {
   btn.addEventListener("mousedown", () => playDrum(btn.dataset.drum, btn));
 });
 
-/* -------------------------------------------------------------------------------------------------
-   RECORDING CONTROLS
---------------------------------------------------------------------------------------------------- */
+/* recording controls */
 const recBtn = $("recordBtn"),
       stopBtn = $("stopBtn"),
       recInd = $("recIndicator"),
@@ -415,9 +387,7 @@ if (clearAllBtn) {
   };
 }
 
-/* -------------------------------------------------------------------------------------------------
-   COLLAPSIBLE DOCK
---------------------------------------------------------------------------------------------------- */
+/* collapsible dock */
 const dock = $("bottomDock");
 const dockHeader = $("dockHeader");
 
