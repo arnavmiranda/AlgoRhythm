@@ -1,7 +1,3 @@
-/* synth-core.js — shared synthesis engine (Karplus–Strong + percussive synths)
-   Drop into your project and include before piano.js / drums.js:
-   <script src="synth-core.js"></script>
-*/
 (function(global){
   const SynthCore = {
     ctx: null,
@@ -25,12 +21,11 @@
     SynthCore.analyser.fftSize = 1024;
 
     // route analyser to destination so visualizer sees signal (and sound still goes to output)
-    // Note: we won't connect analyser directly to destination (it doesn't output), but we'll ensure we connect source nodes to both ctx.destination and analyser.
     SynthCore._inited = true;
     return SynthCore.ctx;
   };
 
-  /* Utility: create a very short white-noise AudioBuffer */
+  /*create a very short white-noise AudioBuffer */
   SynthCore._createNoiseBuffer = function(durationSec = 0.03){
     const ctx = SynthCore.ensure();
     const len = Math.max(1, Math.floor(durationSec * ctx.sampleRate));
@@ -40,10 +35,7 @@
     return buf;
   };
 
-  /* Karplus–Strong style pluck using DelayNode + feedback loop + lowpass filter
-     freq: target frequency in Hz
-     opts: {gain, decay, filterFreq, duration}
-  */
+  /* karplus–strong style pluck using DelayNode + feedback loop + lowpass filter*/
   SynthCore.playPluck = function(freq, opts = {}){
     const ctx = SynthCore.ensure();
     opts = Object.assign({gain: 0.9, decay: 0.996, filterFreq: 8000, duration: 2000}, opts);
@@ -56,10 +48,9 @@
     const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = opts.filterFreq;
     const feedback = ctx.createGain(); feedback.gain.value = opts.decay;
 
-    // output gain envelope control
     const outGain = ctx.createGain(); outGain.gain.value = opts.gain;
 
-    // connect feedback loop: delay -> filter -> feedback -> delay
+    // connect feedback loop
     delay.connect(filter);
     filter.connect(feedback);
     feedback.connect(delay);
@@ -79,21 +70,16 @@
     src.loop = false;
     src.connect(delay); // excite the loop
 
-    // optionally route inputGain (for external plucks)
     inputGain.connect(delay);
 
     src.start(now);
-    // schedule gentle decay by reducing feedback over time and fading out outGain
     const stopAt = now + ((opts.duration || 2000) / 1000);
-    // ramp feedback to 0.0001
     feedback.gain.setValueAtTime(feedback.gain.value, now);
     feedback.gain.exponentialRampToValueAtTime(0.0001, stopAt);
 
-    // fade out output
     outGain.gain.setValueAtTime(outGain.gain.value, now);
     outGain.gain.exponentialRampToValueAtTime(0.0001, stopAt + 0.05);
 
-    // disconnect nodes after finished to avoid leaks
     setTimeout(() => {
       try {
         src.disconnect();
@@ -105,20 +91,17 @@
     }, (opts.duration || 2000) + 200);
 
     // set delay time to 1/freq (a small pitch-correction factor may be used)
-    // clamp delay to valid range
     const maxDelay = Math.max(0.001, Math.min(1.0, 1 / Math.max(1, freq)));
     try { delay.delayTime.setValueAtTime(maxDelay, now); } catch (e) { delay.delayTime.value = maxDelay; }
 
-    // return an object with nodes in case caller wants to tweak or stop early
     return {src, delay, filter, feedback, outGain, stopTime: stopAt};
   };
 
-  /* ---- Enhanced Plucked-Hammer Piano Synthesis ---- */
+  /* enhanced plucked-hammer piano synthesis*/
 SynthCore.playPianoLike = function(freq, opts = {}) {
   const ctx = SynthCore.ensure();
   const now = ctx.currentTime;
 
-  // base params
   opts = Object.assign({
     strings: 3,
     detuneCents: 4,       // small detuning per string
@@ -133,7 +116,7 @@ SynthCore.playPianoLike = function(freq, opts = {}) {
   const gainNode = ctx.createGain();
   gainNode.gain.value = opts.baseGain;
 
-  // slight stereo spread
+  // stereo spread
   const panner = ctx.createStereoPanner();
   panner.pan.value = (Math.random() * 2 - 1) * 0.3;
 
@@ -142,7 +125,7 @@ SynthCore.playPianoLike = function(freq, opts = {}) {
   panner.connect(SynthCore.dest);
   panner.connect(SynthCore.analyser);
 
-  // ---- hammer impulse ----
+  // hammer impulse
   const hammerBuf = SynthCore._createNoiseBuffer(opts.hammerDur);
   const hammerSrc = ctx.createBufferSource();
   hammerSrc.buffer = hammerBuf;
@@ -154,7 +137,6 @@ SynthCore.playPianoLike = function(freq, opts = {}) {
   hammerSrc.start(now);
   hammerSrc.stop(now + opts.hammerDur);
 
-  // ---- create 3 slightly detuned plucks ----
   for (let i = 0; i < opts.strings; i++) {
     const detuneFactor = Math.pow(2, (i - 1) * opts.detuneCents / 1200);
     const f = freq * detuneFactor;
@@ -169,11 +151,9 @@ SynthCore.playPianoLike = function(freq, opts = {}) {
       duration: opts.duration
     });
 
-    // feed each string into our output gain node
     pluck.outGain.connect(gainNode);
   }
 
-  // slow fade-out
   gainNode.gain.setValueAtTime(gainNode.gain.value, now);
   gainNode.gain.exponentialRampToValueAtTime(0.0001, now + opts.duration / 1000);
 
@@ -181,7 +161,7 @@ SynthCore.playPianoLike = function(freq, opts = {}) {
 };
 
 
-  /* Simple oscillator-based tone (useful for toms / debug) */
+  /* simple oscillator-based tone */
   SynthCore.playTone = function(freq, opts = {}){
     const ctx = SynthCore.ensure();
     opts = Object.assign({gain: 0.25, type: 'sine', duration: 0.6}, opts);
@@ -199,12 +179,11 @@ SynthCore.playPianoLike = function(freq, opts = {}) {
     g.gain.exponentialRampToValueAtTime(0.001, now + opts.duration);
     osc.start(now);
     osc.stop(now + opts.duration + 0.02);
-    // cleanup
     setTimeout(()=>{ try{ osc.disconnect(); g.disconnect(); }catch(e){} }, (opts.duration+0.1)*1000);
     return {osc,g};
   };
 
-  /* Kick drum: sine pitch sweep + envelope */
+  /* kick drum: sine pitch sweep + envelope */
   SynthCore.playKick = function(opts = {}){
     const ctx = SynthCore.ensure();
     opts = Object.assign({gain: 0.9, duration: 0.5, startFreq: 150, endFreq: 40}, opts);
@@ -230,7 +209,7 @@ SynthCore.playPianoLike = function(freq, opts = {}) {
     return {osc,g};
   };
 
-  /* Snare: noise burst through bandpass + short oscillator body */
+  /* snare: noise burst through bandpass + short oscillator body */
   SynthCore.playSnare = function(opts = {}){
     const ctx = SynthCore.ensure();
     opts = Object.assign({noiseGain: 0.6, toneGain: 0.4, duration: 0.25}, opts);
@@ -276,7 +255,7 @@ SynthCore.playPianoLike = function(freq, opts = {}) {
     return {noiseSrc, osc};
   };
 
-  /* Hi-hat: filtered noise (closed/open variants via decay) */
+  /* hi-hat: filtered noise (closed/open variants via decay) */
   SynthCore.playHiHat = function(opts = {}){
     const ctx = SynthCore.ensure();
     opts = Object.assign({gain: 0.2, decay: 0.08, highpass: 5000}, opts);
@@ -302,7 +281,7 @@ SynthCore.playPianoLike = function(freq, opts = {}) {
     return {src};
   };
 
-  /* Tom (short sine with medium decay) */
+  /* tom (short sine with medium decay) */
   SynthCore.playTom = function(freq = 120, opts = {}){
     opts = Object.assign({gain: 0.6, duration: 0.6}, opts);
     return SynthCore.playTone(freq, {gain: opts.gain, type: 'sine', duration: opts.duration});
@@ -313,38 +292,32 @@ SynthCore.playPianoLike = function(freq, opts = {}) {
 
 })(window);
 
-/* KarplusStrong Ring Buffer Class (Simulates a String) */
+/* KarplusStrong Ring Buffer Class */
 class KarplusStrong {
   // A ring buffer is implemented using a standard JavaScript Array.
   // Dequeuing is done with shift(), and enqueuing with push().
   constructor(frequency, sampleRate) {
       this.sampleRate = sampleRate;
       this.bufferLength = Math.round(this.sampleRate / frequency);
-      // Ensure minimum buffer size to prevent infinite loop/division by zero
       this.bufferLength = Math.max(4, this.bufferLength);
       this.buffer = new Array(this.bufferLength);
-      this.decay = 0.996; // Energy decay factor for natural string damping
-      this.filterType = 'average'; // or 'simple-lowpass'
+      this.decay = 0.996; 
+      this.filterType = 'average'; 
 
-      // 1. Excitation: Fill the buffer with white noise (random numbers between -0.5 and 0.5)
       for (let i = 0; i < this.bufferLength; i++) {
           this.buffer[i] = (Math.random() - 0.5) * 2;
       }
   }
 
-  // The 'tic' or update step: Dequeue, filter, and Enqueue
+  // update step: dequeue, filter, and enqueue
   tic() {
       const sample1 = this.buffer.shift();
       const sample2 = this.buffer[0]; // The new head of the queue
 
       let newSample;
       if (this.filterType === 'average') {
-          // Simple averaging filter (the classic Karplus-Strong low-pass)
           newSample = (sample1 + sample2) * 0.5 * this.decay;
       } else {
-          // Alternative: Simple low-pass filter (0.5 * z^-1 + 0.5 * z^-2)
-          // newSample = (sample1 + sample2) * 0.5 * this.decay;
-          // The simple average is usually sufficient for a classic pluck sound.
           newSample = (sample1 + sample2) * 0.5 * this.decay;
       }
 
@@ -353,38 +326,31 @@ class KarplusStrong {
   }
 }
 
-/* Guitar Pluck Function */
+/* guitar pluck function */
 SynthCore.pluckGuitarString = function(opts = {}) {
   const ctx = SynthCore.ensure();
   const now = ctx.currentTime;
   // Default to A3 (220 Hz) if no frequency is provided
   const frequency = opts.frequency || 220; 
   
-  // 1. Create the Karplus-Strong string object
   const ksString = new KarplusStrong(frequency, ctx.sampleRate);
   
-  // 2. Determine how long the note should play (e.g., 2 seconds of sound)
   const duration = 2.0;
   const numSamples = Math.round(ctx.sampleRate * duration);
   
-  // 3. Generate the entire waveform into an AudioBuffer
   const audioBuffer = ctx.createBuffer(1, numSamples, ctx.sampleRate);
   const channelData = audioBuffer.getChannelData(0);
 
-  // Run the Karplus-Strong algorithm for the full duration
   for (let i = 0; i < numSamples; i++) {
       channelData[i] = ksString.tic();
   }
 
-  // 4. Create source node and connect it
   const source = ctx.createBufferSource();
   source.buffer = audioBuffer;
   
-  // Gain/Envelope for a clean end fade-out
   const gainNode = ctx.createGain();
   const maxGain = opts.gain || 0.4;
   gainNode.gain.setValueAtTime(maxGain, now);
-  // Simple fade-out over 2 seconds
   gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 
   source.connect(gainNode);
@@ -394,7 +360,6 @@ SynthCore.pluckGuitarString = function(opts = {}) {
   
   source.start(now);
 
-  // Clean up nodes after sound finishes
   setTimeout(() => {
       try { source.disconnect(); gainNode.disconnect(); } catch (e) {}
   }, duration * 1000);
